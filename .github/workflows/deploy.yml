@@ -25,7 +25,7 @@ jobs:
         run: git rev-parse HEAD > commit_hash.txt
 
       - name: Create build_date.txt
-        run: date -u +"%Y-%m-%d-%H-%M" > build_date.txt
+        run: date -u +"%Y-%m-%d %H-%M" > build_date.txt
 
       - name: Setup Pages
         id: pages
