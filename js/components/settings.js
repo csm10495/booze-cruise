@@ -16,9 +16,17 @@ class SettingsComponent {
 
             container.innerHTML = this.createSettingsHTML(cruises, currentCruise);
             this.setupEventListeners();
+            this.updateAppVersionDisplay();
         } catch (error) {
             console.error('Error rendering settings page:', error);
             container.innerHTML = '<div class="message error">Error loading settings: ' + error.message + '</div>';
+        }
+    }
+
+    async updateAppVersionDisplay() {
+        const appVersionElement = document.getElementById('app-version');
+        if (appVersionElement) {
+            appVersionElement.textContent = await this.getAppVersion();
         }
     }
 
@@ -139,7 +147,7 @@ class SettingsComponent {
                         <div class="action-item">
                             <div class="action-info">
                                 <strong>App Version</strong>
-                                <p>Cruise Drink Tracker v1.0</p>
+                                <p>Booze Cruise <span id="app-version">Loading...</span></p>
                             </div>
                         </div>
                     </div>
@@ -1146,6 +1154,24 @@ class SettingsComponent {
 
     generateId() {
         return 'id-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
+    }
+
+    async getAppVersion() {
+        try {
+            const commitHashResponse = await fetch('commit_hash.txt');
+            const buildDateResponse = await fetch('build_date.txt');
+
+            if (commitHashResponse.ok && buildDateResponse.ok) {
+                const commitHash = (await commitHashResponse.text()).trim().substring(0, 8);
+                const buildDate = (await buildDateResponse.text()).trim();
+                return `v${commitHash}-${buildDate}`;
+            } else {
+                return 'dev';
+            }
+        } catch (error) {
+            console.warn('Could not read version files, assuming dev environment:', error);
+            return 'dev';
+        }
     }
 }
 

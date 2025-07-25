@@ -21,6 +21,12 @@ jobs:
         with:
           fetch-depth: 0 # Fetch all history for .GitInfo and auto-lastmod
 
+      - name: Create commit_hash.txt
+        run: git rev-parse HEAD > commit_hash.txt
+
+      - name: Create build_date.txt
+        run: date -u +"%Y%m%d%H%M%S" > build_date.txt
+
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
