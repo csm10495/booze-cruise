@@ -9,7 +9,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+      pages: write
+      id-token: write
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
