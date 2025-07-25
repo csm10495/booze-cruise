@@ -290,13 +290,14 @@ class SettingsComponent {
         const result = await this.deferredPrompt.prompt();
         if (result.outcome === 'accepted') {
             window.showToast('App installed successfully!', 'success');
-        }
-
-        this.deferredPrompt = null;
-        const installBtn = document.getElementById('install-pwa-btn');
-        if (installBtn) {
-            installBtn.disabled = true;
-            installBtn.textContent = 'Already Installed';
+            this.deferredPrompt = null;
+            const installBtn = document.getElementById('install-pwa-btn');
+            if (installBtn) {
+                installBtn.disabled = true;
+                installBtn.textContent = 'Already Installed';
+            }
+        } else {
+            window.showToast('App installation cancelled.', 'info');
         }
     }
 
