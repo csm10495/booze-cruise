@@ -14,7 +14,9 @@ const urlsToCache = [
   '/js/components/settings.js',
   '/js/utils/photo.js',
   '/js/utils/themes.js',
-  '/lib/chart.min.js'
+  '/lib/chart.min.js',
+  '/favicon.ico',
+  '/icon.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -35,7 +37,14 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        return fetch(event.request).then(
+
+        // IMPORTANT: Clone the request. A request is a stream and
+        // can only be consumed once. We must clone it so that we can
+        // consume the stream twice: one for the cache and one for the
+        // network.
+        const fetchRequest = event.request.clone();
+
+        return fetch(fetchRequest).then(
           (response) => {
             // Check if we received a valid response
             if (!response || response.status !== 200 || response.type !== 'basic') {
@@ -54,7 +63,10 @@ self.addEventListener('fetch', (event) => {
 
             return response;
           }
-        );
+        ).catch(() => {
+          // If network request fails, try to serve from cache
+          return caches.match('/index.html'); // Fallback to index.html
+        });
       })
   );
 });
