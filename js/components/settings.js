@@ -1162,9 +1162,11 @@ class SettingsComponent {
             const buildDateResponse = await fetch('build_date.txt');
 
             if (commitHashResponse.ok && buildDateResponse.ok) {
-                const commitHash = (await commitHashResponse.text()).trim().substring(0, 8);
+                const fullCommitHash = (await commitHashResponse.text()).trim();
+                const shortCommitHash = fullCommitHash.substring(0, 8);
                 const buildDate = (await buildDateResponse.text()).trim();
-                return `v${commitHash}-${buildDate}`;
+                const repoUrl = `https://github.com/csm10495/booze-cruise/commit/${fullCommitHash}`;
+                return `v<a href="${repoUrl}" target="_blank" rel="noopener noreferrer">${shortCommitHash}</a> - ${buildDate}`;
             } else {
                 return 'dev';
             }
