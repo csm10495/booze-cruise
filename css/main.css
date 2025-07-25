@@ -1,0 +1,316 @@
+/* Basic Reset & Body Styles */
+:root {
+    --primary-color: #2196F3; /* Blue */
+    --primary-color-10: rgba(33, 150, 243, 0.1); /* 10% opacity */
+    --secondary-color: #FFC107; /* Amber */
+    --background-color: #f4f7f6; /* Light Grayish Blue */
+    --text-color: #333;
+    --light-text-color: #666;
+    --border-color: #ddd;
+    --card-background: #ffffff;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --success-color: #4CAF50;
+    --error-color: #F44336;
+    --info-color: #2196F3;
+    --warning-color: #FF9800;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+/* App Container */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100vw; /* Full viewport width */
+    max-width: none; /* Remove width restriction */
+    margin: 0; /* Remove centering */
+    background-color: var(--card-background);
+    box-shadow: none; /* Remove shadow since it fills screen */
+    position: relative;
+}
+
+/* Add responsive max-width for very large screens */
+@media (min-width: 1200px) {
+    .app-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        box-shadow: 0 0 15px var(--shadow-color);
+    }
+}
+
+/* Header */
+.app-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 5px var(--shadow-color);
+    z-index: 100;
+    position: sticky;
+    top: 0;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 1;
+}
+
+.app-header.hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+    box-shadow: none;
+}
+
+.app-title {
+    font-size: 1.8rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.cruise-info {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-top: 0.25rem;
+    font-weight: 400;
+}
+
+/* Main Content Area */
+.main-content {
+    flex-grow: 1;
+    padding: 0; /* Remove horizontal padding */
+    overflow-y: auto; /* Enable scrolling for content */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    position: relative; /* For absolute positioning of pages */
+}
+
+.page {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0; /* Remove horizontal padding */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background-color: var(--card-background); /* Ensure page background */
+}
+
+.page.active {
+    display: block; /* Show active page */
+}
+
+.page-content {
+    padding-bottom: 60px; /* Space for bottom nav */
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background-color: var(--card-background);
+    border-top: 1px solid var(--border-color);
+    padding: 0.5rem 0;
+    position: sticky; /* Stick to bottom */
+    bottom: 0;
+    width: 100%;
+    box-shadow: 0 -2px 5px var(--shadow-color);
+    z-index: 10;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--light-text-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: color 0.3s ease;
+    flex: 1; /* Distribute space evenly */
+}
+
+.nav-item:hover {
+    color: var(--primary-color);
+    background-color: rgba(33, 150, 243, 0.1);
+    border-radius: 8px;
+}
+
+.nav-item.active {
+    color: white;
+    background-color: var(--primary-color);
+    font-weight: bold;
+    border-radius: 8px;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.nav-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.2rem;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Modals */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 100; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.8); /* Black w/ opacity */
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    margin: auto;
+    display: block;
+    max-width: 90%;
+    max-height: 90%;
+    position: relative;
+}
+
+.modal-content img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+}
+
+.modal-caption {
+    text-align: center;
+    color: #ccc;
+    padding: 10px 0;
+    height: 150px;
+}
+
+.modal .close {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.modal .close:hover,
+.modal .close:focus {
+    color: #bbb;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Loading Spinner */
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 99;
+}
+
+.spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid var(--primary-color);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Toast Notification */
+.toast {
+    visibility: hidden; /* Hidden by default. Visible on click */
+    min-width: 250px; /* Set a default minimum width */
+    margin-left: -125px; /* Divide value of min-width by 2 */
+    background-color: #333; /* Black background color */
+    color: #fff; /* White text color */
+    text-align: center; /* Centered text */
+    border-radius: 2px; /* Rounded borders */
+    padding: 16px; /* Padding */
+    position: fixed; /* Sit on top of the screen */
+    z-index: 101; /* Add a z-index if needed */
+    left: 50%; /* Center the snackbar */
+    bottom: 30px; /* 30px from the bottom */
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+/* Show the toast notification */
+.toast.show {
+    visibility: visible; /* Show the snackbar */
+    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+/* Animations to fade the toast in and out */
+@-webkit-keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+    from {bottom: 30px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+    from {bottom: 30px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
+}

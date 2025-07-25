@@ -1,0 +1,33 @@
+Create a PWA for keeping track of drinks for a given cruise. The website should be able to work fully offline and store data locally.
+
+The way I want it to work is, you open it, it has a button to add drink, you click that then it has selectors for the person, then it has selectors for recent drinks the person had. You chose the drink. If the drink isn't already listed, there is a button to add a new drink.
+
+Then you hit submit and it adds the drink for the person. Optionally there should be an option to add a photo of the drink at both the drink creation stage and the drink selection stage.
+
+When you select a person or an drink, it should show the picture (if available) of the person and/or drink.
+
+There should also be another page you can go to that has a chart of all the drinks ordered per person per day (including which drink and the totals for each.) You should be able to filter by day and person. Also you should be able to tap to view the photo (if any).
+
+The PWA should work fully without internet access and store all data in the browser's local storage. There should be a way to import / export all data in a JSON format.
+
+There should also be a settings page where you can clear all data, import data, or export data. You should also be able to customize the colors/theme used in the app.
+
+There should be a option in the settings page to 'install this app locally' which will prompt the user to install the PWA on their device.
+
+In the settings page, there is also an option to change the 'default cruise', add/remove cruises, change the current cruise. The default cruise is the open that is selected when the app is opened.
+
+For navigation, use: Bottom navigation bar with icons for Add Drink, Analytics, and Settings.
+
+For the person and drink selection, Start with empty lists - users add all people and drinks from scratch.
+
+For the analytics/charts page: Bar charts showing drink counts with different colors for each drink type
+Simple tables with totals and expandable rows for details
+Support profile pictures for people and photos for drinks
+
+Also support a cover photo for the given cruise.
+
+Do not generate icons or images for the app. Use existing unicode icons as needed.
+
+After done: use playwright to test the app. Test all functionalities I've listed here.
+
+On the add drink page, it should mention the current cruise somewhere. There should also be a count of drinks per person along with their name. Also in settings there should be a way to add/edit existing photos for people and drinks.

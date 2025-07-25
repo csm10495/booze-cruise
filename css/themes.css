@@ -1,0 +1,27 @@
+/* Theme Definitions */
+
+/* Dark Theme */
+body.theme-dark {
+    --primary-color: #90CAF9; /* Light Blue */
+    --primary-color-10: rgba(144, 202, 249, 0.1); /* 10% opacity */
+    --secondary-color: #FFAB40; /* Orange Accent */
+    --background-color: #121212; /* Dark Gray */
+    --text-color: #E0E0E0; /* Light Gray */
+    --light-text-color: #B0B0B0;
+    --border-color: #333333;
+    --card-background: #1E1E1E;
+    --shadow-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Ocean Theme */
+body.theme-ocean {
+    --primary-color: #007BFF; /* Ocean Blue */
+    --primary-color-10: rgba(0, 123, 255, 0.1); /* 10% opacity */
+    --secondary-color: #17A2B8; /* Teal */
+    --background-color: #E0F2F7; /* Light Sky Blue */
+    --text-color: #2C3E50; /* Dark Blue Gray */
+    --light-text-color: #5D6D7E;
+    --border-color: #A7D9ED;
+    --card-background: #FFFFFF;
+    --shadow-color: rgba(0, 123, 255, 0.1);
+}
