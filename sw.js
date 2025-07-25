@@ -1,22 +1,22 @@
 const CACHE_NAME = 'cruise-drink-tracker-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/css/main.css',
-  '/css/themes.css',
-  '/css/components.css',
-  '/js/app.js',
-  '/js/storage.js',
-  '/js/components/navigation.js',
-  '/js/components/add-drink.js',
-  '/js/components/analytics.js',
-  '/js/components/settings.js',
-  '/js/utils/photo.js',
-  '/js/utils/themes.js',
-  '/lib/chart.min.js',
-  '/favicon.ico',
-  '/icon.png'
+  '/booze-cruise/',
+  '/booze-cruise/index.html',
+  '/booze-cruise/manifest.json',
+  '/booze-cruise/css/main.css',
+  '/booze-cruise/css/themes.css',
+  '/booze-cruise/css/components.css',
+  '/booze-cruise/js/app.js',
+  '/booze-cruise/js/storage.js',
+  '/booze-cruise/js/components/navigation.js',
+  '/booze-cruise/js/components/add-drink.js',
+  '/booze-cruise/js/components/analytics.js',
+  '/booze-cruise/js/components/settings.js',
+  '/booze-cruise/js/utils/photo.js',
+  '/booze-cruise/js/utils/themes.js',
+  '/booze-cruise/lib/chart.min.js',
+  '/booze-cruise/favicon.ico',
+  '/booze-cruise/icon.png'
 ];
 
 self.addEventListener('install', (event) => {

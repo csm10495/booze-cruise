@@ -2,7 +2,7 @@
   "name": "Booze Cruise",
   "short_name": "BoozeCruise",
   "description": "Track drinks during your booze cruise with full offline functionality",
-  "start_url": "/",
+  "start_url": "/booze-cruise/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2196F3",
