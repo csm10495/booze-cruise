@@ -811,7 +811,7 @@ class SettingsComponent {
                         <div class="form-group">
                             <label>Or Enter Custom Emoji</label>
                             <div class="custom-emoji-container">
-                                <input type="text" id="edit-person-custom-emoji" placeholder="Enter any emoji or text" maxlength="1">
+                                <input type="text" id="edit-person-custom-emoji" placeholder="Enter any emoji or text">
                                 <button type="button" id="edit-person-use-custom" class="btn btn-outline btn-sm">Use Custom</button>
                             </div>
                         </div>
@@ -863,22 +863,16 @@ class SettingsComponent {
             useCustomBtn.addEventListener('click', () => {
                 const customEmoji = customInput.value.trim();
                 if (customEmoji) {
-                    // Limit to first character only
-                    const singleChar = [...customEmoji][0];
-                    this.editPersonEmoji = singleChar;
+                    this.editPersonEmoji = customEmoji;
                     this.editPersonPhoto = null;
                     this.editPersonPhotoFull = null;
 
                     const preview = document.getElementById('edit-person-photo-preview');
-                    preview.innerHTML = `<span style="font-size: 32px;">${singleChar}</span>`;
+                    preview.innerHTML = `<span style="font-size: 32px;">${customEmoji}</span>`;
 
                     // Clear inputs
                     customInput.value = '';
                     document.getElementById('edit-person-photo-input').value = '';
-
-                    if (customEmoji.length > 1) {
-                        window.showToast('Only single characters allowed - used first character', 'info');
-                    }
                 }
             });
         }
@@ -888,22 +882,16 @@ class SettingsComponent {
                 if (e.key === 'Enter') {
                     const customEmoji = customInput.value.trim();
                     if (customEmoji) {
-                        // Limit to first character only
-                        const singleChar = [...customEmoji][0];
-                        this.editPersonEmoji = singleChar;
+                        this.editPersonEmoji = customEmoji;
                         this.editPersonPhoto = null;
                         this.editPersonPhotoFull = null;
 
                         const preview = document.getElementById('edit-person-photo-preview');
-                        preview.innerHTML = `<span style="font-size: 32px;">${singleChar}</span>`;
+                        preview.innerHTML = `<span style="font-size: 32px;">${customEmoji}</span>`;
 
                         // Clear inputs
                         customInput.value = '';
                         document.getElementById('edit-person-photo-input').value = '';
-
-                        if (customEmoji.length > 1) {
-                            window.showToast('Only single characters allowed - used first character', 'info');
-                        }
                     }
                 }
             });
@@ -1029,7 +1017,7 @@ class SettingsComponent {
                         <div class="form-group">
                             <label>Or Enter Custom Emoji</label>
                             <div class="custom-emoji-container">
-                                <input type="text" id="edit-drink-custom-emoji" placeholder="Enter any emoji or text" maxlength="1">
+                                <input type="text" id="edit-drink-custom-emoji" placeholder="Enter any emoji or text">
                                 <button type="button" id="edit-drink-use-custom" class="btn btn-outline btn-sm">Use Custom</button>
                             </div>
                         </div>
@@ -1081,22 +1069,16 @@ class SettingsComponent {
             useCustomBtn.addEventListener('click', () => {
                 const customEmoji = customInput.value.trim();
                 if (customEmoji) {
-                    // Limit to first character only
-                    const singleChar = [...customEmoji][0];
-                    this.editDrinkEmoji = singleChar;
+                    this.editDrinkEmoji = customEmoji;
                     this.editDrinkPhoto = null;
                     this.editDrinkPhotoFull = null;
 
                     const preview = document.getElementById('edit-drink-photo-preview');
-                    preview.innerHTML = `<span style="font-size: 32px;">${singleChar}</span>`;
+                    preview.innerHTML = `<span style="font-size: 32px;">${customEmoji}</span>`;
 
                     // Clear inputs
                     customInput.value = '';
                     document.getElementById('edit-drink-photo-input').value = '';
-
-                    if (customEmoji.length > 1) {
-                        window.showToast('Only single characters allowed - used first character', 'info');
-                    }
                 }
             });
         }
@@ -1106,22 +1088,16 @@ class SettingsComponent {
                 if (e.key === 'Enter') {
                     const customEmoji = customInput.value.trim();
                     if (customEmoji) {
-                        // Limit to first character only
-                        const singleChar = [...customEmoji][0];
-                        this.editDrinkEmoji = singleChar;
+                        this.editDrinkEmoji = customEmoji;
                         this.editDrinkPhoto = null;
                         this.editDrinkPhotoFull = null;
 
                         const preview = document.getElementById('edit-drink-photo-preview');
-                        preview.innerHTML = `<span style="font-size: 32px;">${singleChar}</span>`;
+                        preview.innerHTML = `<span style="font-size: 32px;">${customEmoji}</span>`;
 
                         // Clear inputs
                         customInput.value = '';
                         document.getElementById('edit-drink-photo-input').value = '';
-
-                        if (customEmoji.length > 1) {
-                            window.showToast('Only single characters allowed - used first character', 'info');
-                        }
                     }
                 }
             });
