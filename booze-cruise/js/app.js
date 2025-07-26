@@ -21,8 +21,6 @@ class DrinkTrackerApp {
             this.navigation.init();
             this.themeManager.init();
 
-            // Set up scroll behavior for header
-            this.setupScrollBehavior();
 
             // Initialize page components
             window.addDrinkComponent = new AddDrinkComponent(this.storage);
@@ -225,37 +223,6 @@ class DrinkTrackerApp {
         return this.initialized;
     }
 
-    setupScrollBehavior() {
-        const header = document.querySelector('.app-header');
-        if (!header) return;
-
-        // Store scroll state for each page
-        this.pageScrollStates = {};
-
-        // Set up scroll listeners for all page elements
-        const pages = document.querySelectorAll('.page');
-        pages.forEach(page => {
-            this.setupPageScrollListener(page, header);
-        });
-    }
-
-    setupPageScrollListener(page, header) {
-        let lastScrollTop = 0;
-
-        page.addEventListener('scroll', () => {
-            const scrollTop = page.scrollTop;
-
-            if (scrollTop > lastScrollTop && scrollTop > 100) {
-                // Scrolling down and past threshold
-                header.classList.add('hidden');
-            } else {
-                // Scrolling up or at top
-                header.classList.remove('hidden');
-            }
-
-            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
-        }, { passive: true });
-    }
 }
 
 // Global app instance

@@ -36,21 +36,28 @@ python -m http.server 8000
 # Or any other static file server
 ```
 
-Then visit `http://localhost:8000` in your browser.
+Then visit `http://localhost:8000/booze-cruise` in your browser.
 
 ## Project Structure
 
 ```
-├── css/                  # Stylesheets
-│   ├── main.css         # Core styles
-│   ├── themes.css       # Theme definitions
-│   └── components.css   # Component-specific styles
-├── js/
-│   ├── app.js          # Main application logic
-│   ├── storage.js      # Data persistence
-│   ├── components/     # UI components
-│   └── utils/          # Utility functions
-└── lib/                # External libraries
+├── booze-cruise/        # Contains all website code
+│   ├── css/              # Stylesheets
+│   │   ├── main.css     # Core styles
+│   │   ├── themes.css   # Theme definitions
+│   │   └── components.css # Component-specific styles
+│   ├── js/
+│   │   ├── app.js      # Main application logic
+│   │   ├── storage.js  # Data persistence
+│   │   ├── components/ # UI components
+│   │   └── utils/      # Utility functions
+│   └── lib/            # External libraries
+│       └── chart.min.js # Chart.js library
+├── .github/            # GitHub Actions workflows
+├── .gitignore          # Git ignore file
+├── LICENSE             # Project license
+├── README.md           # This README file
+└── initial_prompt.txt  # Initial prompt for the project
 ```
 
 ## License

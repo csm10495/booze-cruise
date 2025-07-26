@@ -34,7 +34,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './' # The directory containing your static files
+          path: './booze-cruise/' # The directory containing your static files
 
       - name: Deploy to GitHub Pages
         id: deployment

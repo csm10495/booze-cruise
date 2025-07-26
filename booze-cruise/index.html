@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Track drinks during your booze cruise with full offline functionality">
+    <meta name="theme-color" content="#2196F3">
+    <title>Booze Cruise</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/booze-cruise/manifest.json">
+    <base href="/booze-cruise/">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app" class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <img src="icon.png" alt="Booze Cruise Icon" style="height: 4em; vertical-align: middle; margin-right: 10px;">
+            <div>
+                <h1 class="app-title">Booze Cruise</h1>
+                <div class="cruise-info">
+                    <span id="current-cruise">No cruise selected</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Add Drink Page -->
+            <section id="add-drink-page" class="page active">
+                <div class="page-content">
+                    <div id="add-drink-content">
+                        <!-- Content will be dynamically loaded -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Page -->
+            <section id="analytics-page" class="page">
+                <div class="page-content">
+                    <div id="analytics-content">
+                        <!-- Content will be dynamically loaded -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Page -->
+            <section id="settings-page" class="page">
+                <div class="page-content">
+                    <div id="settings-content">
+                        <!-- Content will be dynamically loaded -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-page="add-drink-page">
+                <span class="nav-icon">🍹</span>
+                <span class="nav-label">Add Drink</span>
+            </button>
+            <button class="nav-item" data-page="analytics-page">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Analytics</span>
+            </button>
+            <button class="nav-item" data-page="settings-page">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Photo Modal -->
+    <div id="photo-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <img id="modal-image" src="" alt="Photo">
+            <div class="modal-caption"></div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <span class="toast-message"></span>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="lib/chart.min.js"></script>
+    <script src="js/utils/photo.js"></script>
+    <script src="js/utils/themes.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/components/navigation.js"></script>
+    <script src="js/components/add-drink.js"></script>
+    <script src="js/components/analytics.js"></script>
+    <script src="js/components/settings.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
