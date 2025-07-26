@@ -1742,6 +1742,22 @@
     margin-top: 1rem;
 }
 
+.app-version-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Pushes gravatar to the right */
+}
+
+.gravatar-icon {
+    width: 40px; /* Adjust size as needed */
+    height: 40px; /* Adjust size as needed */
+    border-radius: 50%; /* Makes it circular */
+    object-fit: cover; /* Ensures the image covers the area */
+    margin-left: 1rem; /* Space between text and icon */
+    flex-shrink: 0; /* Prevent shrinking */
+    border: 2px solid var(--border-color); /* Add a light border */
+}
+
 .management-list {
     margin-top: 1rem;
 }
