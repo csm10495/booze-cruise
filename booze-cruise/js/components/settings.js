@@ -1166,7 +1166,7 @@ class SettingsComponent {
                 const shortCommitHash = fullCommitHash.substring(0, 8);
                 const buildDate = (await buildDateResponse.text()).trim();
                 const repoUrl = `https://github.com/csm10495/booze-cruise/commit/${fullCommitHash}`;
-                return `<a href="${repoUrl}" target="_blank" rel="noopener noreferrer">${shortCommitHash}</a> @ ${buildDate}`;
+                return `<a href="${repoUrl}" target="_blank" rel="noopener noreferrer">${shortCommitHash}</a> @ ${buildDate} UTC`;
             } else {
                 return 'dev';
             }
