@@ -363,6 +363,10 @@ class AnalyticsComponent {
                 }
             });
         });
+
+        // Add click handler for delete button in record details modal
+        // This needs to be delegated or attached after the modal is created
+        // For now, we'll attach it directly in showRecordDetails
     }
 
     async autoApplyFilters() {
@@ -443,6 +447,9 @@ class AnalyticsComponent {
                             </div>
                         ` : ''}
                     </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-danger" id="delete-record-btn" data-record-id="${record.id}">Delete Record</button>
+                    </div>
                 </div>
             `;
 
@@ -459,9 +466,33 @@ class AnalyticsComponent {
                     document.body.removeChild(modal);
                 }
             });
+
+            // Delete button handler
+            const deleteBtn = modal.querySelector('#delete-record-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', async (e) => {
+                    const recordIdToDelete = e.target.dataset.recordId;
+                    if (confirm('Are you sure you want to delete this drink record?')) {
+                        await this.deleteDrinkRecordAndRefresh(recordIdToDelete);
+                        document.body.removeChild(modal); // Close modal after deletion
+                    }
+                });
+            }
+
         } catch (error) {
             console.error('Error showing record details:', error);
             window.showToast('Error loading record details', 'error');
+        }
+    }
+
+    async deleteDrinkRecordAndRefresh(recordId) {
+        try {
+            await this.storage.deleteDrinkRecord(recordId);
+            window.showToast('Drink record deleted successfully!', 'success');
+            await this.render(); // Re-render analytics to update the table and charts
+        } catch (error) {
+            console.error('Error deleting drink record:', error);
+            window.showToast('Error deleting drink record: ' + error.message, 'error');
         }
     }
 
