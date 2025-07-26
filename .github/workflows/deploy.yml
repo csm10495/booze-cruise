@@ -25,7 +25,7 @@ jobs:
         run: git rev-parse HEAD > booze-cruise/commit_hash.txt
 
       - name: Create build_date.txt
-        run: date -u +"%Y-%m-%d %H-%M" > booze-cruise/build_date.txt
+        run: date -u +"%Y-%m-%d %I-%M%p" > booze-cruise/build_date.txt
 
       - name: Setup Pages
         id: pages
