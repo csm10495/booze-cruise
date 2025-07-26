@@ -1,3 +1,7 @@
+// Determine the base URL for the application
+// This is crucial for handling deployments on GitHub Pages where the base URL includes the repository name.
+const BASE_URL = window.location.pathname.includes('/booze-cruise/') ? '/booze-cruise/' : '/';
+
 // Main Application Controller
 class DrinkTrackerApp {
     constructor() {
@@ -133,7 +137,7 @@ class DrinkTrackerApp {
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
-                const registration = await navigator.serviceWorker.register('/sw.js');
+                const registration = await navigator.serviceWorker.register(`${BASE_URL}sw.js`);
                 console.log('Service Worker registered successfully:', registration);
             } catch (error) {
                 console.error('Service Worker registration failed:', error);

@@ -1,22 +1,24 @@
 const CACHE_NAME = 'cruise-drink-tracker-v1';
+const BASE_PATH = self.location.pathname.includes('/booze-cruise/') ? '/booze-cruise/' : '/';
+
 const urlsToCache = [
-  '/booze-cruise/',
-  '/booze-cruise/index.html',
-  '/booze-cruise/manifest.json',
-  '/booze-cruise/css/main.css',
-  '/booze-cruise/css/themes.css',
-  '/booze-cruise/css/components.css',
-  '/booze-cruise/js/app.js',
-  '/booze-cruise/js/storage.js',
-  '/booze-cruise/js/components/navigation.js',
-  '/booze-cruise/js/components/add-drink.js',
-  '/booze-cruise/js/components/analytics.js',
-  '/booze-cruise/js/components/settings.js',
-  '/booze-cruise/js/utils/photo.js',
-  '/booze-cruise/js/utils/themes.js',
-  '/booze-cruise/lib/chart.min.js',
-  '/booze-cruise/favicon.ico',
-  '/booze-cruise/icon.png'
+  `${BASE_PATH}`,
+  `${BASE_PATH}index.html`,
+  `${BASE_PATH}manifest.json`,
+  `${BASE_PATH}css/main.css`,
+  `${BASE_PATH}css/themes.css`,
+  `${BASE_PATH}css/components.css`,
+  `${BASE_PATH}js/app.js`,
+  `${BASE_PATH}js/storage.js`,
+  `${BASE_PATH}js/components/navigation.js`,
+  `${BASE_PATH}js/components/add-drink.js`,
+  `${BASE_PATH}js/components/analytics.js`,
+  `${BASE_PATH}js/components/settings.js`,
+  `${BASE_PATH}js/utils/photo.js`,
+  `${BASE_PATH}js/utils/themes.js`,
+  `${BASE_PATH}lib/chart.min.js`,
+  `${BASE_PATH}favicon.ico`,
+  `${BASE_PATH}icon.png`
 ];
 
 self.addEventListener('install', (event) => {
