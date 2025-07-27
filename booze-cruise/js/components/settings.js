@@ -136,6 +136,16 @@ class SettingsComponent {
                     <div class="app-actions">
                         <div class="action-item">
                             <div class="action-info">
+                                <strong>Remember Page Cross Refresh</strong>
+                                <p>When enabled, the app will remember the last page you were on after reload.</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="remember-page-refresh" ${localStorage.getItem('rememberPageOnRefresh') !== 'false' ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="action-item">
+                            <div class="action-info">
                                 <strong>Install App</strong>
                                 <p>Install this app on your device for easier access</p>
                             </div>
@@ -231,6 +241,13 @@ class SettingsComponent {
     }
 
     setupEventListeners() {
+        // Remember Page Cross Refresh setting
+        const rememberPageCheckbox = document.getElementById('remember-page-refresh');
+        if (rememberPageCheckbox) {
+            rememberPageCheckbox.addEventListener('change', (e) => {
+                localStorage.setItem('rememberPageOnRefresh', e.target.checked ? 'true' : 'false');
+            });
+        }
         // Cruise management
         const addCruiseBtn = document.getElementById('add-cruise-btn');
         if (addCruiseBtn) {

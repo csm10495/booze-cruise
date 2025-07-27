@@ -8,6 +8,7 @@ class NavigationManager {
     init() {
         this.navItems = document.querySelectorAll('.nav-item');
         this.setupEventListeners();
+        // Do not navigate here; app.js will handle initial navigation and highlight
     }
 
     setupEventListeners() {
@@ -29,6 +30,11 @@ class NavigationManager {
                     item.classList.add('active');
                 }
             });
+
+            // Persist active tab only if setting is enabled
+            if (localStorage.getItem('rememberPageOnRefresh') !== 'false') {
+                localStorage.setItem('activeTab', pageId);
+            }
 
             // Load the page content
             if (window.app && window.app.isInitialized()) {

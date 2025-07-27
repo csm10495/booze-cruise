@@ -28,7 +28,10 @@ class DrinkTrackerApp {
             window.settingsComponent = new SettingsComponent(this.storage, this.themeManager);
 
             // Load initial page content
-            await this.loadPage('add-drink-page');
+            const rememberPage = localStorage.getItem('rememberPageOnRefresh') !== 'false';
+            const savedTab = rememberPage ? localStorage.getItem('activeTab') : null;
+            const tabToLoad = savedTab || 'add-drink-page';
+            await this.navigation.navigateToPage(tabToLoad);
 
             // Register service worker
             await this.registerServiceWorker();
