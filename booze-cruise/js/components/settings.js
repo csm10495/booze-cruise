@@ -753,7 +753,13 @@ class SettingsComponent {
 
         if (person) {
             title.textContent = 'Edit Person';
-            document.getElementById('edit-person-name').value = person.name;
+            const modal = document.getElementById('person-edit-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                const nameInput = document.getElementById('edit-person-name');
+                if (nameInput) nameInput.value = person.name;
+                nameInput?.focus();
+            }, 0);
 
             if (person.photo) {
                 const preview = document.getElementById('edit-person-photo-preview');
@@ -868,31 +874,55 @@ class SettingsComponent {
         });
 
         // Custom emoji functionality
-        const customInput = document.getElementById('edit-person-custom-emoji');
+        const personCustomInput = document.getElementById('edit-person-custom-emoji');
         const useCustomBtn = document.getElementById('edit-person-use-custom');
+        if (personCustomInput) {
+            personCustomInput.addEventListener('input', (e) => {
+                let val = e.target.value;
+                let grapheme = val;
+                if (window.Intl && Intl.Segmenter) {
+                    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                    const graphemes = Array.from(segmenter.segment(val), seg => seg.segment);
+                    grapheme = graphemes[0] || '';
+                } else {
+                    grapheme = [...val][0] || '';
+                }
+                if (val !== grapheme) {
+                    e.target.value = grapheme;
+                }
+            });
+        }
 
         if (useCustomBtn) {
             useCustomBtn.addEventListener('click', () => {
-                const customEmoji = customInput.value.trim();
-                if (customEmoji) {
-                    this.editPersonEmoji = customEmoji;
+                let customEmoji = personCustomInput.value.trim();
+                let grapheme = customEmoji;
+                if (window.Intl && Intl.Segmenter) {
+                    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                    const graphemes = Array.from(segmenter.segment(customEmoji), seg => seg.segment);
+                    grapheme = graphemes[0] || '';
+                } else {
+                    grapheme = [...customEmoji][0] || '';
+                }
+                if (grapheme) {
+                    this.editPersonEmoji = grapheme;
                     this.editPersonPhoto = null;
                     this.editPersonPhotoFull = null;
 
                     const preview = document.getElementById('edit-person-photo-preview');
-                    preview.innerHTML = `<span style="font-size: 32px;">${customEmoji}</span>`;
+                    preview.innerHTML = `<span style="font-size: 32px;">${grapheme}</span>`;
 
                     // Clear inputs
-                    customInput.value = '';
+                    personCustomInput.value = '';
                     document.getElementById('edit-person-photo-input').value = '';
                 }
             });
         }
 
-        if (customInput) {
-            customInput.addEventListener('keypress', (e) => {
+        if (personCustomInput) {
+            personCustomInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    const customEmoji = customInput.value.trim();
+                    const customEmoji = personCustomInput.value.trim();
                     if (customEmoji) {
                         this.editPersonEmoji = customEmoji;
                         this.editPersonPhoto = null;
@@ -902,7 +932,7 @@ class SettingsComponent {
                         preview.innerHTML = `<span style="font-size: 32px;">${customEmoji}</span>`;
 
                         // Clear inputs
-                        customInput.value = '';
+                        personCustomInput.value = '';
                         document.getElementById('edit-person-photo-input').value = '';
                     }
                 }
@@ -959,7 +989,13 @@ class SettingsComponent {
 
         if (drink) {
             title.textContent = 'Edit Drink';
-            document.getElementById('edit-drink-name').value = drink.name;
+            const modal = document.getElementById('drink-edit-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                const nameInput = document.getElementById('edit-drink-name');
+                if (nameInput) nameInput.value = drink.name;
+                nameInput?.focus();
+            }, 0);
 
             if (drink.photo) {
                 const preview = document.getElementById('edit-drink-photo-preview');
@@ -1074,31 +1110,55 @@ class SettingsComponent {
         });
 
         // Custom emoji functionality
-        const customInput = document.getElementById('edit-drink-custom-emoji');
+        const drinkCustomInput = document.getElementById('edit-drink-custom-emoji');
         const useCustomBtn = document.getElementById('edit-drink-use-custom');
+        if (drinkCustomInput) {
+            drinkCustomInput.addEventListener('input', (e) => {
+                let val = e.target.value;
+                let grapheme = val;
+                if (window.Intl && Intl.Segmenter) {
+                    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                    const graphemes = Array.from(segmenter.segment(val), seg => seg.segment);
+                    grapheme = graphemes[0] || '';
+                } else {
+                    grapheme = [...val][0] || '';
+                }
+                if (val !== grapheme) {
+                    e.target.value = grapheme;
+                }
+            });
+        }
 
         if (useCustomBtn) {
             useCustomBtn.addEventListener('click', () => {
-                const customEmoji = customInput.value.trim();
-                if (customEmoji) {
-                    this.editDrinkEmoji = customEmoji;
+                let customEmoji = drinkCustomInput.value.trim();
+                let grapheme = customEmoji;
+                if (window.Intl && Intl.Segmenter) {
+                    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                    const graphemes = Array.from(segmenter.segment(customEmoji), seg => seg.segment);
+                    grapheme = graphemes[0] || '';
+                } else {
+                    grapheme = [...customEmoji][0] || '';
+                }
+                if (grapheme) {
+                    this.editDrinkEmoji = grapheme;
                     this.editDrinkPhoto = null;
                     this.editDrinkPhotoFull = null;
 
                     const preview = document.getElementById('edit-drink-photo-preview');
-                    preview.innerHTML = `<span style="font-size: 32px;">${customEmoji}</span>`;
+                    preview.innerHTML = `<span style="font-size: 32px;">${grapheme}</span>`;
 
                     // Clear inputs
-                    customInput.value = '';
+                    drinkCustomInput.value = '';
                     document.getElementById('edit-drink-photo-input').value = '';
                 }
             });
         }
 
-        if (customInput) {
-            customInput.addEventListener('keypress', (e) => {
+        if (drinkCustomInput) {
+            drinkCustomInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    const customEmoji = customInput.value.trim();
+                    const customEmoji = drinkCustomInput.value.trim();
                     if (customEmoji) {
                         this.editDrinkEmoji = customEmoji;
                         this.editDrinkPhoto = null;
@@ -1108,7 +1168,7 @@ class SettingsComponent {
                         preview.innerHTML = `<span style="font-size: 32px;">${customEmoji}</span>`;
 
                         // Clear inputs
-                        customInput.value = '';
+                        drinkCustomInput.value = '';
                         document.getElementById('edit-drink-photo-input').value = '';
                     }
                 }

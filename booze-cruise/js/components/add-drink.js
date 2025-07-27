@@ -133,7 +133,7 @@ class AddDrinkComponent {
                                     <div class="custom-emoji-input">
                                         <label for="person-custom-emoji">Or type any emoji:</label>
                                         <div class="emoji-input-container">
-                                            <input type="text" id="person-custom-emoji" placeholder="Type or paste emoji here" maxlength="1">
+                                            <input type="text" id="person-custom-emoji" placeholder="Type or paste emoji here">
                                             <button type="button" class="btn btn-outline btn-sm" id="person-use-custom">Use</button>
                                         </div>
                                     </div>
@@ -183,7 +183,7 @@ class AddDrinkComponent {
                                     <div class="custom-emoji-input">
                                         <label for="drink-custom-emoji">Or type any emoji:</label>
                                         <div class="emoji-input-container">
-                                            <input type="text" id="drink-custom-emoji" placeholder="Type or paste emoji here" maxlength="1">
+                                            <input type="text" id="drink-custom-emoji" placeholder="Type or paste emoji here">
                                             <button type="button" class="btn btn-outline btn-sm" id="drink-use-custom">Use</button>
                                         </div>
                                     </div>
@@ -830,18 +830,43 @@ class AddDrinkComponent {
         // Person custom emoji
         const personCustomInput = document.getElementById('person-custom-emoji');
         const personUseCustomBtn = document.getElementById('person-use-custom');
+        if (personCustomInput) {
+            personCustomInput.addEventListener('input', (e) => {
+                let val = e.target.value;
+                let grapheme = val;
+                if (window.Intl && Intl.Segmenter) {
+                    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                    const graphemes = Array.from(segmenter.segment(val), seg => seg.segment);
+                    grapheme = graphemes[0] || '';
+                } else {
+                    grapheme = [...val][0] || '';
+                }
+                if (val !== grapheme) {
+                    e.target.value = grapheme;
+                }
+            });
+        }
 
         if (personUseCustomBtn) {
             personUseCustomBtn.addEventListener('click', () => {
                 const customEmoji = personCustomInput.value.trim();
                 if (customEmoji) {
-                    // Limit to first character only
-                    const singleChar = [...customEmoji][0];
-                    this.selectPersonEmoji(singleChar, document.getElementById('person-emoji-options'));
+                    console.log('Custom emoji raw:', customEmoji, 'length:', customEmoji.length);
+                    let grapheme = customEmoji;
+                    if (window.Intl && Intl.Segmenter) {
+                        const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                        const graphemes = Array.from(segmenter.segment(customEmoji), seg => seg.segment);
+                        grapheme = graphemes[0];
+                        console.log('Grapheme clusters:', graphemes);
+                    } else {
+                        grapheme = [...customEmoji][0];
+                        console.log('Intl.Segmenter not available, using spread:', grapheme);
+                    }
+                    this.selectPersonEmoji(grapheme, document.getElementById('person-emoji-options'));
                     personCustomInput.value = '';
 
                     if (customEmoji.length > 1) {
-                        window.showToast('Only single characters allowed - used first character', 'info');
+                        window.showToast('Only single glyph allowed - used first grapheme', 'info');
                     }
                 }
             });
@@ -852,13 +877,22 @@ class AddDrinkComponent {
                 if (e.key === 'Enter') {
                     const customEmoji = personCustomInput.value.trim();
                     if (customEmoji) {
-                        // Limit to first character only
-                        const singleChar = [...customEmoji][0];
-                        this.selectPersonEmoji(singleChar, document.getElementById('person-emoji-options'));
+                        console.log('Custom emoji raw:', customEmoji, 'length:', customEmoji.length);
+                        let grapheme = customEmoji;
+                        if (window.Intl && Intl.Segmenter) {
+                            const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                            const graphemes = Array.from(segmenter.segment(customEmoji), seg => seg.segment);
+                            grapheme = graphemes[0];
+                            console.log('Grapheme clusters:', graphemes);
+                        } else {
+                            grapheme = [...customEmoji][0];
+                            console.log('Intl.Segmenter not available, using spread:', grapheme);
+                        }
+                        this.selectPersonEmoji(grapheme, document.getElementById('person-emoji-options'));
                         personCustomInput.value = '';
 
                         if (customEmoji.length > 1) {
-                            window.showToast('Only single characters allowed - used first character', 'info');
+                            window.showToast('Only single glyph allowed - used first grapheme', 'info');
                         }
                     }
                 }
@@ -868,18 +902,43 @@ class AddDrinkComponent {
         // Drink custom emoji
         const drinkCustomInput = document.getElementById('drink-custom-emoji');
         const drinkUseCustomBtn = document.getElementById('drink-use-custom');
+        if (drinkCustomInput) {
+            drinkCustomInput.addEventListener('input', (e) => {
+                let val = e.target.value;
+                let grapheme = val;
+                if (window.Intl && Intl.Segmenter) {
+                    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                    const graphemes = Array.from(segmenter.segment(val), seg => seg.segment);
+                    grapheme = graphemes[0] || '';
+                } else {
+                    grapheme = [...val][0] || '';
+                }
+                if (val !== grapheme) {
+                    e.target.value = grapheme;
+                }
+            });
+        }
 
         if (drinkUseCustomBtn) {
             drinkUseCustomBtn.addEventListener('click', () => {
                 const customEmoji = drinkCustomInput.value.trim();
                 if (customEmoji) {
-                    // Limit to first character only
-                    const singleChar = [...customEmoji][0];
-                    this.selectDrinkEmoji(singleChar, document.getElementById('drink-emoji-options'));
+                    console.log('Custom emoji raw:', customEmoji, 'length:', customEmoji.length);
+                    let grapheme = customEmoji;
+                    if (window.Intl && Intl.Segmenter) {
+                        const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                        const graphemes = Array.from(segmenter.segment(customEmoji), seg => seg.segment);
+                        grapheme = graphemes[0];
+                        console.log('Grapheme clusters:', graphemes);
+                    } else {
+                        grapheme = [...customEmoji][0];
+                        console.log('Intl.Segmenter not available, using spread:', grapheme);
+                    }
+                    this.selectDrinkEmoji(grapheme, document.getElementById('drink-emoji-options'));
                     drinkCustomInput.value = '';
 
                     if (customEmoji.length > 1) {
-                        window.showToast('Only single characters allowed - used first character', 'info');
+                        window.showToast('Only single glyph allowed - used first grapheme', 'info');
                     }
                 }
             });
@@ -890,13 +949,22 @@ class AddDrinkComponent {
                 if (e.key === 'Enter') {
                     const customEmoji = drinkCustomInput.value.trim();
                     if (customEmoji) {
-                        // Limit to first character only
-                        const singleChar = [...customEmoji][0];
-                        this.selectDrinkEmoji(singleChar, document.getElementById('drink-emoji-options'));
+                        console.log('Custom emoji raw:', customEmoji, 'length:', customEmoji.length);
+                        let grapheme = customEmoji;
+                        if (window.Intl && Intl.Segmenter) {
+                            const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                            const graphemes = Array.from(segmenter.segment(customEmoji), seg => seg.segment);
+                            grapheme = graphemes[0];
+                            console.log('Grapheme clusters:', graphemes);
+                        } else {
+                            grapheme = [...customEmoji][0];
+                            console.log('Intl.Segmenter not available, using spread:', grapheme);
+                        }
+                        this.selectDrinkEmoji(grapheme, document.getElementById('drink-emoji-options'));
                         drinkCustomInput.value = '';
 
                         if (customEmoji.length > 1) {
-                            window.showToast('Only single characters allowed - used first character', 'info');
+                            window.showToast('Only single glyph allowed - used first grapheme', 'info');
                         }
                     }
                 }
