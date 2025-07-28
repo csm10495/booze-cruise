@@ -134,7 +134,6 @@ body {
     align-items: center;
     background-color: var(--card-background);
     border-top: 1px solid var(--border-color);
-    padding: 0.5rem 0;
     position: sticky; /* Stick to bottom */
     bottom: 0;
     width: 100%;
@@ -167,7 +166,6 @@ body {
     background-color: var(--primary-color);
     font-weight: bold;
     border-radius: 8px;
-    transform: scale(1.05);
     box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
 }
 
