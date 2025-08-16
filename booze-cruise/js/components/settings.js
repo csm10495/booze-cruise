@@ -39,7 +39,8 @@ class SettingsComponent {
                     <div class="current-cruise-display">
                         <strong>Current Cruise:</strong> ${currentCruise?.name || 'None selected'}
                         ${currentCruise?.coverPhoto ?
-                            `<img src="${currentCruise.coverPhoto}" class="cruise-cover-thumb" alt="Cruise cover">` :
+                            `<img src="${currentCruise.coverPhoto}" class="cruise-cover-thumb" alt="Cruise cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                             <span class="cruise-cover-fallback" style="display:none;">🚢</span>` :
                             ''
                         }
                     </div>
@@ -216,7 +217,8 @@ class SettingsComponent {
             <div class="cruise-item ${isCurrent ? 'current' : ''}" data-cruise-id="${cruise.id}">
                 <div class="cruise-info">
                     ${cruise.coverPhoto ?
-                        `<img src="${cruise.coverPhoto}" class="cruise-thumb" alt="${cruise.name}">` :
+                        `<img src="${cruise.coverPhoto}" class="cruise-thumb" alt="${cruise.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                         <div class="cruise-thumb-placeholder" style="display:none;">🚢</div>` :
                         '<div class="cruise-thumb-placeholder">🚢</div>'
                     }
                     <div class="cruise-details">
@@ -356,7 +358,16 @@ class SettingsComponent {
         // Photo upload for cruise cover
         const photoManager = new PhotoManager();
         photoManager.setupPhotoUpload('cruise-cover-input', 'cruise-cover-preview', (photoData) => {
-            this.cruiseCoverPhoto = photoData;
+            // Validate the photo data before storing
+            if (photoData && (photoData.thumbnail || photoData.fullSize)) {
+                this.cruiseCoverPhoto = photoData.thumbnail || photoData.fullSize;
+            } else if (typeof photoData === 'string' && photoData.startsWith('data:image/')) {
+                this.cruiseCoverPhoto = photoData;
+            } else {
+                console.warn('Invalid photo data received:', photoData);
+                window.showToast('Invalid image data. Please try uploading again.', 'error');
+                this.cruiseCoverPhoto = null;
+            }
         });
     }
 
@@ -492,7 +503,7 @@ class SettingsComponent {
 
             if (cruise.coverPhoto) {
                 const preview = document.getElementById('cruise-cover-preview');
-                preview.innerHTML = `<img src="${cruise.coverPhoto}" alt="Cover">`;
+                preview.innerHTML = `<img src="${cruise.coverPhoto}" alt="Cover" onerror="this.style.display='none'; this.parentElement.innerHTML='🚢 (Image Error)';">`;
                 this.cruiseCoverPhoto = cruise.coverPhoto;
             }
         } else {

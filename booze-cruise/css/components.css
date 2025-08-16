@@ -1619,6 +1619,13 @@
     border: 1px solid var(--border-color);
 }
 
+/* Cruise cover fallback styles */
+.cruise-cover-fallback {
+    font-size: 1.2rem;
+    color: var(--light-text-color);
+    margin-left: 0.5rem;
+}
+
 .cruise-details {
     flex-grow: 1;
 }
