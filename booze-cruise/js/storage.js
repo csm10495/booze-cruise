@@ -277,9 +277,6 @@ class StorageManager {
     }
 
     async deleteDrink(id) {
-        // Delete associated drink records
-        const records = await this.getByIndex('drinkRecords', 'drinkId', id);
-        await Promise.all(records.map(r => this.delete('drinkRecords', r.id)));
         return this.delete('drinks', id);
     }
 
@@ -301,6 +298,10 @@ class StorageManager {
 
     async getDrinkRecordsForDate(date) {
         return this.getByIndex('drinkRecords', 'date', date);
+    }
+
+    async getDrinkRecordsForDrink(drinkId) {
+        return this.getByIndex('drinkRecords', 'drinkId', drinkId);
     }
 
     async deleteDrinkRecord(id) {

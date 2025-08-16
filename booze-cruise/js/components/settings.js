@@ -741,22 +741,24 @@ class SettingsComponent {
     }
 
     async deleteDrink(drinkId) {
-        if (confirm('Delete this drink and all records of it being consumed? This cannot be undone!')) {
-            try {
-                // First delete all drink records for this drink
-                const records = await this.storage.getDrinkRecordsForDrink(drinkId);
-                for (const record of records) {
-                    await this.storage.deleteDrinkRecord(record.id);
-                }
+        try {
+            // Check if drink has any records (has been consumed)
+            const records = await this.storage.getDrinkRecordsForDrink(drinkId);
 
-                // Then delete the drink
+            if (records.length > 0) {
+                window.showToast('Recorded drink types can\'t be deleted', 'error');
+                return;
+            }
+
+            // If no records exist, proceed with deletion
+            if (confirm('Delete this drink? This cannot be undone!')) {
                 await this.storage.deleteDrink(drinkId);
                 window.showToast('Drink deleted successfully!', 'success');
                 await this.render();
-            } catch (error) {
-                console.error('Error deleting drink:', error);
-                window.showToast('Error deleting drink: ' + error.message, 'error');
             }
+        } catch (error) {
+            console.error('Error deleting drink:', error);
+            window.showToast('Error deleting drink: ' + error.message, 'error');
         }
     }
 
