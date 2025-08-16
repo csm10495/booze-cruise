@@ -95,8 +95,22 @@ class DrinkTrackerApp {
 
     updateCruiseDisplay() {
         const cruiseElement = document.getElementById('current-cruise');
+        const cruiseIconElement = document.getElementById('cruise-icon');
+
         if (cruiseElement && this.currentCruise) {
             cruiseElement.textContent = this.currentCruise.name;
+        }
+
+        if (cruiseIconElement && this.currentCruise) {
+            if (this.currentCruise.coverPhoto) {
+                // Show cruise-specific cover photo only if one exists
+                cruiseIconElement.src = this.currentCruise.coverPhoto;
+                cruiseIconElement.alt = `${this.currentCruise.name} Icon`;
+                cruiseIconElement.style.display = 'block';
+            } else {
+                // Hide the icon if no custom cover photo is set
+                cruiseIconElement.style.display = 'none';
+            }
         }
     }
 

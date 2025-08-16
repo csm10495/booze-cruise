@@ -1596,7 +1596,7 @@
 .cruise-info {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: .5rem;
     flex-grow: 1;
 }
 
