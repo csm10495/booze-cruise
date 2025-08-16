@@ -442,10 +442,22 @@ class AnalyticsComponent {
                             <div class="detail-item">
                                 <strong>Photo:</strong><br>
                                 <img src="${record.photo}" class="detail-large-photo"
-                                     onclick="this.closest('.modal').remove(); window.showModal('${record.photo}', 'Drink Photo');"
+                                     onclick="this.closest('.modal').remove(); window.showModal('${record.photoFull || record.photo}', 'Drink Photo');"
                                      alt="Drink photo">
                             </div>
                         ` : ''}
+                        <div class="detail-item">
+                            <strong>Record Photo:</strong>
+                            <div class="photo-actions">
+                                ${record.photo ? `
+                                    <button class="btn" id="change-record-photo-btn" data-record-id="${record.id}">Change Photo</button>
+                                    <button class="btn btn-outline" id="remove-record-photo-btn" data-record-id="${record.id}">Remove Photo</button>
+                                ` : `
+                                    <button class="btn" id="add-record-photo-btn" data-record-id="${record.id}">Add Photo</button>
+                                `}
+                                <input type="file" id="record-photo-input-${record.id}" accept="image/*" style="display:none">
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-actions">
                         <button class="btn btn-danger" id="delete-record-btn" data-record-id="${record.id}">Delete Record</button>
@@ -475,6 +487,59 @@ class AnalyticsComponent {
                     if (confirm('Are you sure you want to delete this drink record?')) {
                         await this.deleteDrinkRecordAndRefresh(recordIdToDelete);
                         document.body.removeChild(modal); // Close modal after deletion
+                    }
+                });
+            }
+
+            // Photo add/change/remove handlers
+            const fileInput = modal.querySelector(`#record-photo-input-${record.id}`);
+            const addBtn = modal.querySelector('#add-record-photo-btn');
+            const changeBtn = modal.querySelector('#change-record-photo-btn');
+            const removeBtn = modal.querySelector('#remove-record-photo-btn');
+
+            const triggerFileSelect = () => fileInput && fileInput.click();
+
+            if (addBtn) addBtn.addEventListener('click', triggerFileSelect);
+            if (changeBtn) changeBtn.addEventListener('click', triggerFileSelect);
+
+            if (fileInput) {
+                fileInput.addEventListener('change', async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+
+                    try {
+                        const pm = window.app?.photoManager || new PhotoManager();
+                        if (pm.validateImageFile) pm.validateImageFile(file);
+
+                        const full = await pm.processPhoto(file);
+                        const thumb = await pm.createThumbnail(full);
+
+                        const updated = { ...record, photo: thumb, photoFull: full };
+                        await this.storage.saveDrinkRecord(updated);
+
+                        window.showToast('Photo saved to record', 'success');
+                        document.body.removeChild(modal);
+                        await this.render();
+                    } catch (err) {
+                        console.error('Error updating record photo:', err);
+                        window.showToast(err?.message || 'Failed to update photo', 'error');
+                    } finally {
+                        e.target.value = '';
+                    }
+                });
+            }
+
+            if (removeBtn) {
+                removeBtn.addEventListener('click', async () => {
+                    try {
+                        const updated = { ...record, photo: null, photoFull: null };
+                        await this.storage.saveDrinkRecord(updated);
+                        window.showToast('Photo removed from record', 'success');
+                        document.body.removeChild(modal);
+                        await this.render();
+                    } catch (err) {
+                        console.error('Error removing record photo:', err);
+                        window.showToast(err?.message || 'Failed to remove photo', 'error');
                     }
                 });
             }
