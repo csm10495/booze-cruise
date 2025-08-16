@@ -694,8 +694,8 @@ class AnalyticsComponent {
         const canvas = document.getElementById('drinks-over-time-chart');
         if (!canvas || !window.Chart) return;
 
-        // Get all unique dates from records
-        const allDates = [...new Set(data.records.map(record => record.date))].sort();
+        // Get all unique dates from records using timestamp converted to local date
+        const allDates = [...new Set(data.records.map(record => new Date(record.timestamp).toLocaleDateString()))].sort();
 
         if (allDates.length === 0) {
             return; // No data to display
@@ -721,9 +721,10 @@ class AnalyticsComponent {
                 personCountsByDate[date] = 0;
             });
 
-            // Count drinks by date for this person
+            // Count drinks by date for this person using timestamp converted to local date
             personRecords.forEach(record => {
-                personCountsByDate[record.date] = (personCountsByDate[record.date] || 0) + 1;
+                const localDate = new Date(record.timestamp).toLocaleDateString();
+                personCountsByDate[localDate] = (personCountsByDate[localDate] || 0) + 1;
             });
 
             const personData = allDates.map(date => personCountsByDate[date]);
@@ -750,7 +751,8 @@ class AnalyticsComponent {
             });
 
             data.records.forEach(record => {
-                totalCountsByDate[record.date] = (totalCountsByDate[record.date] || 0) + 1;
+                const localDate = new Date(record.timestamp).toLocaleDateString();
+                totalCountsByDate[localDate] = (totalCountsByDate[localDate] || 0) + 1;
             });
 
             const totalData = allDates.map(date => totalCountsByDate[date]);
