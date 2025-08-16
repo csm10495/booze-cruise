@@ -14,6 +14,7 @@ const urlsToCache = [
   '/booze-cruise/js/components/settings.js',
   '/booze-cruise/js/utils/photo.js',
   '/booze-cruise/js/utils/themes.js',
+  '/booze-cruise/js/utils/cruise-highlights-exporter.js',
   '/booze-cruise/lib/chart.min.js',
   '/booze-cruise/favicon.ico',
   '/booze-cruise/icon.png',

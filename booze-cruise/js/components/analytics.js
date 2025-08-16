@@ -7,6 +7,7 @@ class AnalyticsComponent {
             endDate: null,
             personId: null
         };
+        this.highlightsExporter = null;
     }
 
     async render() {
@@ -93,8 +94,11 @@ class AnalyticsComponent {
 
         return `
             <div class="analytics-container">
-                <!-- Filter Button -->
+                <!-- Filter and Export Header -->
                 <div class="analytics-filter-header">
+                    <button class="btn btn-outline" id="export-highlights-btn" title="Export Cruise Highlights">
+                        🎉 Export Highlights
+                    </button>
                     <button class="filter-toggle-btn" id="filter-toggle-btn" title="Filter Analytics">
                         ${this.getActiveFilterSummary(data)}
                     </button>
@@ -305,6 +309,17 @@ class AnalyticsComponent {
     }
 
     setupEventListeners() {
+        // Initialize highlights exporter
+        if (!this.highlightsExporter && window.CruiseHighlightsExporter) {
+            this.highlightsExporter = new CruiseHighlightsExporter(this.storage, window.app?.photoManager);
+        }
+
+        // Export highlights button
+        const exportBtn = document.getElementById('export-highlights-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportCruiseHighlights());
+        }
+
         // Filter modal controls
         const filterToggleBtn = document.getElementById('filter-toggle-btn');
         const filterModal = document.getElementById('filter-modal');
@@ -976,6 +991,130 @@ class AnalyticsComponent {
 
         return { backgrounds, borders };
     }
+
+    async exportCruiseHighlights() {
+        const currentCruise = window.app?.getCurrentCruise();
+        if (!currentCruise) {
+            window.showToast('No cruise selected', 'error');
+            return;
+        }
+
+        if (!this.highlightsExporter) {
+            window.showToast('Export feature not available', 'error');
+            return;
+        }
+
+        try {
+            // Show loading state
+            const exportBtn = document.getElementById('export-highlights-btn');
+            const originalText = exportBtn.textContent;
+            exportBtn.textContent = '⏳ Generating...';
+            exportBtn.disabled = true;
+
+            // Generate highlights image
+            const imageDataUrl = await this.highlightsExporter.generateHighlightsImage(currentCruise.id);
+
+            // Show preview modal
+            this.showHighlightsPreview(imageDataUrl, currentCruise.name);
+
+        } catch (error) {
+            console.error('Error exporting cruise highlights:', error);
+            window.showToast('Failed to generate highlights: ' + error.message, 'error');
+        } finally {
+            // Reset button state
+            const exportBtn = document.getElementById('export-highlights-btn');
+            if (exportBtn) {
+                exportBtn.textContent = '🎉 Export Highlights';
+                exportBtn.disabled = false;
+            }
+        }
+    }
+
+    showHighlightsPreview(imageDataUrl, cruiseName) {
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'modal highlights-preview-modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content highlights-modal-content">
+                <div class="modal-header">
+                    <h3>🎉 ${cruiseName} Highlights</h3>
+                    <span class="close" id="close-highlights-modal">&times;</span>
+                </div>
+                <div class="modal-body highlights-modal-body">
+                    <div class="highlights-preview-container">
+                        <img src="${imageDataUrl}" alt="Cruise Highlights" class="highlights-preview-image">
+                    </div>
+                    <div class="highlights-actions">
+                        <a href="${imageDataUrl}" download="${cruiseName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_highlights.png" class="btn" id="download-highlights-btn">
+                            📥 Download PNG
+                        </a>
+                        <button class="btn btn-secondary" id="regenerate-highlights-btn">
+                            🔄 Regenerate
+                        </button>
+                        <button class="btn btn-outline" id="close-highlights-btn">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Event listeners
+        const closeBtn = modal.querySelector('#close-highlights-modal');
+        const closeBtn2 = modal.querySelector('#close-highlights-btn');
+        const downloadBtn = modal.querySelector('#download-highlights-btn');
+        const regenerateBtn = modal.querySelector('#regenerate-highlights-btn');
+
+        const closeModal = () => {
+            document.body.removeChild(modal);
+        };
+
+        closeBtn.addEventListener('click', closeModal);
+        closeBtn2.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Download click handler with toast notification
+        downloadBtn.addEventListener('click', () => {
+            window.showToast('Highlights downloaded successfully!', 'success');
+        });
+
+        regenerateBtn.addEventListener('click', async () => {
+            try {
+                // Update button state
+                regenerateBtn.textContent = '⏳ Generating...';
+                regenerateBtn.disabled = true;
+
+                // Generate new highlights image
+                const currentCruise = window.app?.getCurrentCruise();
+                const newImageDataUrl = await this.highlightsExporter.generateHighlightsImage(currentCruise.id);
+
+                // Update the image in the modal
+                const previewImage = modal.querySelector('.highlights-preview-image');
+                previewImage.src = newImageDataUrl;
+
+                // Update download link to use new image
+                const newFilename = `${cruiseName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_highlights.png`;
+                downloadBtn.href = newImageDataUrl;
+                downloadBtn.download = newFilename;
+
+                window.showToast('New highlights generated!', 'success');
+
+            } catch (error) {
+                console.error('Error regenerating highlights:', error);
+                window.showToast('Failed to regenerate highlights: ' + error.message, 'error');
+            } finally {
+                // Reset button state
+                regenerateBtn.textContent = '🔄 Regenerate';
+                regenerateBtn.disabled = false;
+            }
+        });
+    }
+
 }
 
 window.AnalyticsComponent = AnalyticsComponent;
