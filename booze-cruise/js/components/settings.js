@@ -1214,6 +1214,31 @@ class SettingsComponent {
                 return;
             }
 
+            // Check for duplicate names (case-insensitive, trimmed, collapsed spaces)
+            const currentCruise = window.app.getCurrentCruise();
+            const existingDrinks = await this.storage.getDrinksForCruise(currentCruise.id);
+            const normalizedName = name.toLowerCase().replace(/\s+/g, ' ');
+
+            const isDuplicate = existingDrinks.some(drink => {
+                // If editing, exclude the current drink from duplicate check
+                if (this.editingDrink && drink.id === this.editingDrink.id) {
+                    return false;
+                }
+                const existingNormalized = drink.name.toLowerCase().trim().replace(/\s+/g, ' ');
+                return existingNormalized === normalizedName;
+            });
+
+            if (isDuplicate) {
+                window.showToast('A drink with this name already exists in this cruise', 'error');
+                // Re-enable submit button
+                const submitBtn = document.querySelector('#edit-drink-form button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Save Drink';
+                }
+                return;
+            }
+
             const drink = {
                 id: this.editingDrink?.id || this.generateId(),
                 name: name,
