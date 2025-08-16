@@ -160,7 +160,7 @@ class SettingsComponent {
                                 <p>Booze Cruise <span id="app-version">Loading...</span></p>
                             </div>
                             <a href="https://github.com/csm10495" target="_blank" rel="noopener noreferrer">
-                                <img src="https://gravatar.com/avatar/2189940f741720249a7a446327c4670c9f8f8c7e99487f0b4be42f805b865136?s=80" alt="Gravatar" class="gravatar-icon">
+                                <img src="https://gravatar.com/avatar/2189940f741720249a7a446327c4670c9f8f8c7e99487f0b4be42f805b865136?s=80" alt="Author Avatar" class="gravatar-icon" onerror="this.src='/booze-cruise/gravatar.png'">
                             </a>
                         </div>
                     </div>

@@ -16,7 +16,8 @@ const urlsToCache = [
   '/booze-cruise/js/utils/themes.js',
   '/booze-cruise/lib/chart.min.js',
   '/booze-cruise/favicon.ico',
-  '/booze-cruise/icon.png'
+  '/booze-cruise/icon.png',
+  '/booze-cruise/gravatar.png'
 ];
 
 self.addEventListener('install', (event) => {
