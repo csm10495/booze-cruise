@@ -189,7 +189,7 @@ class SettingsComponent {
                                 <div class="image-upload-container">
                                     <div class="image-preview" id="cruise-cover-preview">🚢</div>
                                     <label for="cruise-cover-input" class="image-upload-label">Choose Photo</label>
-                                    <input type="file" id="cruise-cover-input" class="image-upload-input">
+                                    <input type="file" accept="image/*;capture=camera" id="cruise-cover-input" class="image-upload-input">
                                 </div>
                             </div>
                             <div class="form-group">
@@ -825,7 +825,7 @@ class SettingsComponent {
                             <div class="image-upload-container">
                                 <div class="image-preview" id="edit-person-photo-preview">📷</div>
                                 <label for="edit-person-photo-input" class="image-upload-label">Choose Photo</label>
-                                <input type="file" id="edit-person-photo-input" class="image-upload-input">
+                                <input type="file" accept="image/*;capture=camera" id="edit-person-photo-input" class="image-upload-input">
                             </div>
                         </div>
 
@@ -1061,7 +1061,7 @@ class SettingsComponent {
                             <div class="image-upload-container">
                                 <div class="image-preview" id="edit-drink-photo-preview">🍹</div>
                                 <label for="edit-drink-photo-input" class="image-upload-label">Choose Photo</label>
-                                <input type="file" id="edit-drink-photo-input" class="image-upload-input">
+                                <input type="file" accept="image/*;capture=camera" id="edit-drink-photo-input" class="image-upload-input">
                             </div>
                         </div>
 

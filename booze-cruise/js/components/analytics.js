@@ -455,7 +455,7 @@ class AnalyticsComponent {
                                 ` : `
                                     <button class="btn" id="add-record-photo-btn" data-record-id="${record.id}">Add Photo</button>
                                 `}
-                                <input type="file" id="record-photo-input-${record.id}" style="display:none">
+                                <input type="file" accept="image/*;capture=camera" id="record-photo-input-${record.id}" style="display:none">
                             </div>
                         </div>
                     </div>

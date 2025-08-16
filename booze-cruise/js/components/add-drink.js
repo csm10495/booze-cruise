@@ -115,7 +115,7 @@ class AddDrinkComponent {
                                 <div class="image-upload-container">
                                     <div class="image-preview" id="person-photo-preview">📷</div>
                                     <label for="person-photo-input" class="image-upload-label">Choose Photo</label>
-                                    <input type="file" id="person-photo-input" class="image-upload-input">
+                                    <input type="file" accept="image/*;capture=camera" id="person-photo-input" class="image-upload-input">
                                 </div>
                                 <div class="emoji-selector">
                                     <label>Or choose an emoji:</label>
@@ -162,7 +162,7 @@ class AddDrinkComponent {
                                 <div class="image-upload-container">
                                     <div class="image-preview" id="drink-photo-preview">🍹</div>
                                     <label for="drink-photo-input" class="image-upload-label">Choose Photo</label>
-                                    <input type="file" id="drink-photo-input" class="image-upload-input">
+                                    <input type="file" accept="image/*;capture=camera" id="drink-photo-input" class="image-upload-input">
                                 </div>
                                 <div class="emoji-selector">
                                     <label>Or choose an emoji:</label>
@@ -298,7 +298,7 @@ class AddDrinkComponent {
                 <div class="image-upload-container">
                     <div class="image-preview" id="record-photo-preview">📷</div>
                     <label for="record-photo-input" class="image-upload-label">Choose Photo</label>
-                    <input type="file" id="record-photo-input" class="image-upload-input">
+                    <input type="file" accept="image/*;capture=camera" id="record-photo-input" class="image-upload-input">
                 </div>
             </div>
         `;
