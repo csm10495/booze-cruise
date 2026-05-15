@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cruise-drink-tracker-v17';
+const CACHE_NAME = 'cruise-drink-tracker-v18';
 const VOICE_CACHE_NAME = 'cruise-voice-v1';
 const SW_VERSION = CACHE_NAME;
 console.log(`[ServiceWorker] script loaded: ${SW_VERSION}`);

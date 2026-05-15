@@ -188,7 +188,7 @@ class SettingsComponent {
                         <div class="action-item">
                             <div class="action-info">
                                 <strong>Offline voice recognition</strong>
-                                <p>Downloads a small English model (~40 MB) so voice works without internet. One-time download, cached on this device.</p>
+                                <p>Downloads a small English model (~40 MB) so voice works without internet. One-time download, cached on this device. Powered by <a href="https://github.com/ccoreilly/vosk-browser" target="_blank" rel="noopener noreferrer">vosk-browser</a> and the <a href="https://alphacephei.com/vosk/" target="_blank" rel="noopener noreferrer">Vosk</a> small English model — both Apache 2.0 licensed. See <a href="https://github.com/csm10495/booze-cruise/blob/master/THIRD_PARTY_LICENSES.md" target="_blank" rel="noopener noreferrer">third-party licenses</a>.</p>
                                 <div id="voice-download-progress" class="voice-download-progress" style="display: none;">
                                     <div class="voice-progress-bar"><div class="voice-progress-fill" style="width: 0%"></div></div>
                                     <div class="voice-progress-text">0%</div>
