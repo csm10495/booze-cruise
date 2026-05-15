@@ -22,6 +22,7 @@
             this.engine = null;
             this._callbacks = null;
             this._finalReceived = false;
+            this._cancelled = false;
         }
 
         _ensureDom() {
@@ -36,7 +37,7 @@
                     <div class="voice-mic" aria-hidden="true">🎤</div>
                     <div class="voice-status">Listening…</div>
                     <div class="voice-transcript" id="voice-transcript"></div>
-                    <div class="voice-hint">Say something like<br><strong>"Coke for Matt and Gina"</strong></div>
+                    <div class="voice-hint">Say something like<br><strong>"Coke for Matt and Gina"</strong><br><span class="voice-subhint">Pause when finished, or tap Done</span></div>
                     <div class="voice-actions">
                         <button type="button" class="btn btn-outline" id="voice-cancel">Cancel</button>
                         <button type="button" class="btn" id="voice-stop">Done</button>
@@ -57,6 +58,7 @@
         async show(callbacks) {
             this._callbacks = callbacks || {};
             this._finalReceived = false;
+            this._cancelled = false;
 
             // Ensure async manager init (Vosk cache probe) has completed
             // before we decide which engine to use. Without this, offline
@@ -81,9 +83,13 @@
             this.engine = engine;
 
             engine.onPartialResult((text) => {
+                if (this._cancelled) return;
                 transcriptEl.textContent = text;
             });
             engine.onFinalResult((text, alternatives) => {
+                // If the user cancelled, the engine's stop() may still
+                // deliver an accumulated final — drop it.
+                if (this._cancelled) return;
                 transcriptEl.textContent = text;
                 this._finalReceived = true;
                 statusEl.textContent = 'Got it';
@@ -91,12 +97,14 @@
                 this._callbacks.onResult && this._callbacks.onResult(text, alternatives || [text]);
             });
             engine.onError((err) => {
+                if (this._cancelled) return;
                 this._hide();
                 this._callbacks.onError && this._callbacks.onError(err);
             });
             engine.onEnd(() => {
                 // The engine ended without firing a final result and without
                 // an explicit cancel — treat as a soft cancel.
+                if (this._cancelled) return;
                 if (!this._finalReceived) {
                     this._hide();
                     this._callbacks.onCancel && this._callbacks.onCancel();
@@ -113,7 +121,10 @@
         }
 
         _cancel() {
-            this._finalReceived = true; // suppress the onEnd→onCancel double-fire
+            // Mark cancelled BEFORE stopping so the engine's stop() doesn't
+            // route a final transcript through onFinalResult to the caller.
+            this._cancelled = true;
+            this._finalReceived = true;
             if (this.engine) this.engine.stop();
             this._hide();
             this._callbacks && this._callbacks.onCancel && this._callbacks.onCancel();

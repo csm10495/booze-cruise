@@ -37,6 +37,11 @@
 
     // --- Web Speech API engine ------------------------------------------
 
+    // How long of a silence pause before we treat the user as "done speaking"
+    // and gracefully stop the engine. The native engine's auto-stop fires
+    // much faster than this and frequently cut users off mid-phrase.
+    const WEB_SPEECH_SILENCE_MS = 1800;
+
     class WebSpeechEngine extends VoiceEngine {
         constructor() {
             super('web-speech');
@@ -84,26 +89,74 @@
             // Ask for several alternatives so the parser can try them all
             // when the top-1 misheard the drink or person names.
             recog.maxAlternatives = 5;
-            recog.continuous = false;
+            // Continuous mode prevents the engine from auto-stopping at the
+            // first pause. Without this, "Coke for Matt and ... Gina"
+            // (with any hesitation) was being cut off after "Matt". We
+            // implement our own silence-based finalize below.
+            recog.continuous = true;
+
+            // Accumulated final transcripts across the whole session. The
+            // engine fires onresult repeatedly as utterances finalize;
+            // we collect everything and emit once at the end.
+            this._accumulatedFinal = '';
+            this._accumulatedAlternatives = [];
+            // After each interim/final result, restart a short silence
+            // timer. When it fires we gracefully stop the engine, which
+            // triggers onend → our final-callback.
+            this._silenceTimer = null;
+            const resetSilenceTimer = () => {
+                if (this._silenceTimer) clearTimeout(this._silenceTimer);
+                this._silenceTimer = setTimeout(() => {
+                    // Stop on silence; onend will deliver the accumulated text.
+                    if (this._recog && !this._stopping) {
+                        this._stopping = true;
+                        try { this._recog.stop(); } catch (e) { /* ignored */ }
+                    }
+                }, WEB_SPEECH_SILENCE_MS);
+            };
 
             recog.onresult = (event) => {
                 let interim = '';
-                let final = '';
-                let alternatives = [];
+                let newFinal = '';
+                let newAlternatives = [];
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const r = event.results[i];
                     if (r.isFinal) {
-                        final += r[0].transcript;
-                        // Collect all alternatives for the final result.
+                        newFinal += r[0].transcript;
                         for (let j = 0; j < r.length; j++) {
-                            alternatives.push(r[j].transcript);
+                            newAlternatives.push(r[j].transcript);
                         }
                     } else {
                         interim += r[0].transcript;
                     }
                 }
-                if (interim && this._partialCb) this._partialCb(interim);
-                if (final && this._finalCb) this._finalCb(final, alternatives);
+                if (newFinal) {
+                    this._accumulatedFinal = (this._accumulatedFinal + ' ' + newFinal).trim();
+                    // Build the top-N composite alternatives by appending
+                    // each new alternative to the accumulated top final.
+                    // This is approximate but works in practice — the
+                    // parser tries each in order until one matches.
+                    if (this._accumulatedAlternatives.length === 0) {
+                        this._accumulatedAlternatives = newAlternatives.slice();
+                    } else {
+                        const merged = [];
+                        for (const acc of this._accumulatedAlternatives) {
+                            for (const alt of newAlternatives) {
+                                merged.push((acc + ' ' + alt).trim());
+                            }
+                        }
+                        // Cap to keep parser work bounded.
+                        this._accumulatedAlternatives = merged.slice(0, 8);
+                    }
+                }
+
+                // Render the rolling transcript live.
+                const liveText = (this._accumulatedFinal + ' ' + interim).trim();
+                if (liveText && this._partialCb) this._partialCb(liveText);
+
+                // Any sound (interim or final) is evidence the user is
+                // still speaking — reset the silence timer.
+                if (interim || newFinal) resetSilenceTimer();
             };
 
             recog.onerror = (event) => {
@@ -122,8 +175,16 @@
             };
 
             recog.onend = () => {
+                if (this._silenceTimer) { clearTimeout(this._silenceTimer); this._silenceTimer = null; }
+                // Deliver the accumulated final transcript before signaling
+                // end-of-session, so the UI can route it through the parser.
+                if (this._accumulatedFinal && this._finalCb) {
+                    this._finalCb(this._accumulatedFinal, this._accumulatedAlternatives.length ? this._accumulatedAlternatives : [this._accumulatedFinal]);
+                }
                 this._recog = null;
                 this._stopping = false;
+                this._accumulatedFinal = '';
+                this._accumulatedAlternatives = [];
                 this._endCb && this._endCb();
             };
 
@@ -141,6 +202,7 @@
         }
 
         stop() {
+            if (this._silenceTimer) { clearTimeout(this._silenceTimer); this._silenceTimer = null; }
             if (this._recog && !this._stopping) {
                 this._stopping = true;
                 try { this._recog.stop(); } catch (e) { /* already stopped */ }
@@ -158,6 +220,11 @@
     const VOSK_MODEL_URL = 'https://ccoreilly.github.io/vosk-browser/models/vosk-model-small-en-us-0.15.tar.gz';
     const VOSK_CACHE = 'cruise-voice-v1';
     const VOSK_LOCALSTORAGE_KEY = 'voice-offline-enabled';
+    // How long of silence before auto-finalize for Vosk. Vosk emits
+    // 'result' events on internal silence detection, which can trigger
+    // even on short mid-phrase pauses; we use our own longer timer
+    // measured from the *last* recognition activity.
+    const VOSK_SILENCE_MS = 1800;
 
     // Helper: are the library + model both present in the dedicated cache?
     async function voskAssetsCached() {
@@ -268,14 +335,33 @@
                 this._audioContext = new (global.AudioContext || global.webkitAudioContext)();
                 const actualSampleRate = this._audioContext.sampleRate;
 
+                // Accumulate Vosk's per-utterance results. Vosk auto-detects
+                // end-of-utterance and emits 'result', so the user pausing
+                // mid-phrase fires a result here. We collect all of them
+                // and emit a single combined final at stop() time.
+                this._accumulatedFinal = '';
+                this._silenceTimer = null;
+                const resetSilence = () => {
+                    if (this._silenceTimer) clearTimeout(this._silenceTimer);
+                    this._silenceTimer = setTimeout(() => this.stop(), VOSK_SILENCE_MS);
+                };
+
                 this._recognizer = new this._model.KaldiRecognizer(actualSampleRate);
                 this._recognizer.on('result', (message) => {
                     const text = (message && message.result && message.result.text) || '';
-                    if (text && this._finalCb) this._finalCb(text, [text]);
+                    if (text) {
+                        this._accumulatedFinal = (this._accumulatedFinal + ' ' + text).trim();
+                        if (this._partialCb) this._partialCb(this._accumulatedFinal);
+                        resetSilence();
+                    }
                 });
                 this._recognizer.on('partialresult', (message) => {
                     const partial = (message && message.result && message.result.partial) || '';
-                    if (partial && this._partialCb) this._partialCb(partial);
+                    if (partial) {
+                        const liveText = (this._accumulatedFinal + ' ' + partial).trim();
+                        if (this._partialCb) this._partialCb(liveText);
+                        resetSilence();
+                    }
                 });
 
                 this._processorNode = this._audioContext.createScriptProcessor(4096, 1, 1);
@@ -300,12 +386,16 @@
         }
 
         stop() {
+            if (this._silenceTimer) { clearTimeout(this._silenceTimer); this._silenceTimer = null; }
+            const finalText = (this._accumulatedFinal || '').trim();
             try { if (this._processorNode) this._processorNode.disconnect(); } catch (e) {}
             try { if (this._sourceNode) this._sourceNode.disconnect(); } catch (e) {}
             try { if (this._mediaStream) this._mediaStream.getTracks().forEach(t => t.stop()); } catch (e) {}
             try { if (this._audioContext && this._audioContext.state !== 'closed') this._audioContext.close(); } catch (e) {}
             try { if (this._recognizer && this._recognizer.remove) this._recognizer.remove(); } catch (e) {}
             this._processorNode = this._sourceNode = this._mediaStream = this._audioContext = this._recognizer = null;
+            this._accumulatedFinal = '';
+            if (finalText && this._finalCb) this._finalCb(finalText, [finalText]);
             this._endCb && this._endCb();
         }
     }
