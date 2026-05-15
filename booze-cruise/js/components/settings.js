@@ -781,15 +781,19 @@ class SettingsComponent {
         const modal = document.getElementById('person-edit-modal');
         const title = document.getElementById('person-modal-title');
 
+        // Always reset form fields and JS state before populating so a
+        // subsequent edit can't inherit name/photo/emoji from a previous
+        // edit session within the same page load.
+        document.getElementById('edit-person-form').reset();
+        document.getElementById('edit-person-photo-preview').innerHTML = '📷';
+        this.editPersonPhoto = null;
+        this.editPersonPhotoFull = null;
+        this.editPersonEmoji = null;
+
         if (person) {
             title.textContent = 'Edit Person';
-            const modal = document.getElementById('person-edit-modal');
-            modal.style.display = 'flex';
-            setTimeout(() => {
-                const nameInput = document.getElementById('edit-person-name');
-                if (nameInput) nameInput.value = person.name;
-                nameInput?.focus();
-            }, 0);
+            const nameInput = document.getElementById('edit-person-name');
+            if (nameInput) nameInput.value = person.name;
 
             if (person.photo) {
                 const preview = document.getElementById('edit-person-photo-preview');
@@ -803,10 +807,6 @@ class SettingsComponent {
             }
         } else {
             title.textContent = 'Add New Person';
-            document.getElementById('edit-person-form').reset();
-            document.getElementById('edit-person-photo-preview').innerHTML = '📷';
-            this.editPersonPhoto = null;
-            this.editPersonPhotoFull = null;
         }
 
         this.editingPerson = person;
@@ -1017,15 +1017,19 @@ class SettingsComponent {
         const modal = document.getElementById('drink-edit-modal');
         const title = document.getElementById('drink-modal-title');
 
+        // Always reset form fields and JS state before populating so a
+        // subsequent edit can't inherit name/photo/emoji from a previous
+        // edit session within the same page load.
+        document.getElementById('edit-drink-form').reset();
+        document.getElementById('edit-drink-photo-preview').innerHTML = '🍹';
+        this.editDrinkPhoto = null;
+        this.editDrinkPhotoFull = null;
+        this.editDrinkEmoji = null;
+
         if (drink) {
             title.textContent = 'Edit Drink';
-            const modal = document.getElementById('drink-edit-modal');
-            modal.style.display = 'flex';
-            setTimeout(() => {
-                const nameInput = document.getElementById('edit-drink-name');
-                if (nameInput) nameInput.value = drink.name;
-                nameInput?.focus();
-            }, 0);
+            const nameInput = document.getElementById('edit-drink-name');
+            if (nameInput) nameInput.value = drink.name;
 
             if (drink.photo) {
                 const preview = document.getElementById('edit-drink-photo-preview');
@@ -1039,10 +1043,6 @@ class SettingsComponent {
             }
         } else {
             title.textContent = 'Add New Drink';
-            document.getElementById('edit-drink-form').reset();
-            document.getElementById('edit-drink-photo-preview').innerHTML = '🍹';
-            this.editDrinkPhoto = null;
-            this.editDrinkPhotoFull = null;
         }
 
         this.editingDrink = drink;
@@ -1281,10 +1281,25 @@ class SettingsComponent {
 
             if (commitHashResponse.ok && buildDateResponse.ok) {
                 const fullCommitHash = (await commitHashResponse.text()).trim();
-                const shortCommitHash = fullCommitHash.substring(0, 8);
                 const buildDate = (await buildDateResponse.text()).trim();
+
+                // Validate we actually got a commit hash and not, e.g., the
+                // index.html shell served as a fallback when offline. A real
+                // git hash is hex and <= 40 chars; anything else is treated
+                // as "dev" so we never render arbitrary HTML in the version
+                // box (which previously caused a nested copy of the app to
+                // appear there).
+                const looksLikeHash = /^[0-9a-f]{7,40}$/i.test(fullCommitHash);
+                if (!looksLikeHash) {
+                    return 'dev';
+                }
+
+                const shortCommitHash = fullCommitHash.substring(0, 8);
                 const repoUrl = `https://github.com/csm10495/booze-cruise/commit/${fullCommitHash}`;
-                return `<a href="${repoUrl}" target="_blank" rel="noopener noreferrer">${shortCommitHash}</a> @ ${buildDate} UTC`;
+                // buildDate is rendered as text via textContent below to be
+                // safe even if a future fallback slips through.
+                const safeBuildDate = buildDate.replace(/[<>&"']/g, '');
+                return `<a href="${repoUrl}" target="_blank" rel="noopener noreferrer">${shortCommitHash}</a> @ ${safeBuildDate} UTC`;
             } else {
                 return 'dev';
             }

@@ -150,6 +150,23 @@ class DrinkTrackerApp {
             try {
                 const registration = await navigator.serviceWorker.register('sw.js');
                 console.log('Service Worker registered successfully:', registration);
+
+                // Log which SW version is actually controlling this page so
+                // we can quickly tell whether a code change is live or
+                // whether we're still being served stale cached scripts.
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (event.data && event.data.type === 'SW_VERSION') {
+                        console.log(`[ServiceWorker] active version: ${event.data.version}`);
+                    }
+                });
+
+                const askActive = () => {
+                    if (navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({ type: 'GET_SW_VERSION' });
+                    }
+                };
+                askActive();
+                navigator.serviceWorker.addEventListener('controllerchange', askActive);
             } catch (error) {
                 console.error('Service Worker registration failed:', error);
             }

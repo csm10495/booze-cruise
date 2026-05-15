@@ -248,16 +248,24 @@ class AddDrinkComponent {
             // Sort drinks by name
             const sortedDrinks = drinks.sort((a, b) => a.name.localeCompare(b.name));
             // Show first 5 drinks initially
-            const initialDrinks = sortedDrinks.slice(0, 5);
+            let initialDrinks = sortedDrinks.slice(0, 5);
+
+            // Ensure the currently selected drink is always visible — without
+            // this, auto-selecting a freshly-added drink whose name sorts past
+            // position 5 would leave the selection invisible in the grid.
+            if (this.selectedDrink && !initialDrinks.some(d => d.id === this.selectedDrink.id)) {
+                const selected = sortedDrinks.find(d => d.id === this.selectedDrink.id);
+                if (selected) initialDrinks = [...initialDrinks, selected];
+            }
 
             initialDrinks.forEach(drink => {
                 html += this.createDrinkCard(drink);
             });
 
             // Add Show All button if there are more than 5 drinks
-            if (sortedDrinks.length > 5) {
+            if (sortedDrinks.length > initialDrinks.length) {
                 html += `<div class="show-all-container">
-                    <button class="btn btn-outline" id="show-all-drinks">Show All (${sortedDrinks.length - 5} more)</button>
+                    <button class="btn btn-outline" id="show-all-drinks">Show All (${sortedDrinks.length - initialDrinks.length} more)</button>
                 </div>`;
             }
         }
@@ -1188,7 +1196,12 @@ class AddDrinkComponent {
             this.hideAddDrinkModal();
             window.showToast('Drink added successfully!', 'success');
 
-            // Refresh the page
+            // Auto-select the newly created drink for the current person(s).
+            // Set state BEFORE render so the new drink is shown as selected
+            // and the photo/submit cards are revealed in a single pass.
+            this.selectedDrink = drink;
+            this.drinkPhoto = null;
+            this.drinkPhotoFull = null;
             await this.render();
         } catch (error) {
             console.error('Error adding drink:', error);
