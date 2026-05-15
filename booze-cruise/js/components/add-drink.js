@@ -37,6 +37,7 @@ class AddDrinkComponent {
 
         return `
             <div class="add-drink-container progressive-cards">
+                ${this._voiceButtonHTML(people, drinks)}
                 <div class="cards-container">
                     <!-- Step 1: Select Person(s) (Always visible) -->
                     <div class="progress-card ${this.selectedPeople.length > 0 ? 'completed' : 'active'}" id="card-person">
@@ -220,6 +221,80 @@ class AddDrinkComponent {
                 ${isSelected ? '<div class="selection-indicator">✓</div>' : ''}
             </div>
         `;
+    }
+
+    // Voice input button — visible whenever the engine is *potentially*
+    // available (i.e., the browser supports it). When the user taps it we
+    // check actual availability and fall back to a clear error toast.
+    _voiceButtonHTML(people, drinks) {
+        const supported = typeof window.VoiceManager === 'function' &&
+            (window.SpeechRecognition || window.webkitSpeechRecognition);
+        if (!supported) return '';
+        // We stash the people/drinks lists already loaded by render() so the
+        // voice handler doesn't have to hit storage again.
+        this._voiceCtx = { people, drinks };
+        return `
+            <div class="voice-bar">
+                <button type="button" class="btn btn-voice" id="voice-input-btn" aria-label="Voice input">
+                    <span class="voice-btn-icon" aria-hidden="true">🎤</span>
+                    <span class="voice-btn-label">Voice</span>
+                </button>
+                <span class="voice-bar-hint">Say "Coke for Matt and Gina"</span>
+            </div>
+        `;
+    }
+
+    handleVoiceClick() {
+        if (!window.VoiceManager || !window.VoiceOverlay || !window.VoiceParser) {
+            window.showToast('Voice input is not available.', 'error');
+            return;
+        }
+        if (!this._voiceManager) this._voiceManager = new window.VoiceManager();
+        if (!this._voiceOverlay) this._voiceOverlay = new window.VoiceOverlay(this._voiceManager);
+
+        this._voiceOverlay.show({
+            onResult: (transcript) => this._applyVoiceTranscript(transcript),
+            onError: (err) => {
+                window.showToast(err.message || 'Voice input failed.', 'error', 4000);
+            },
+            onCancel: () => { /* silent */ }
+        });
+    }
+
+    async _applyVoiceTranscript(transcript) {
+        try {
+            const ctx = this._voiceCtx || {};
+            // Refresh from storage in case people/drinks were added after the
+            // page was rendered (e.g., user added a drink mid-session).
+            const cruise = window.app?.getCurrentCruise();
+            const people = cruise ? await this.storage.getPeopleForCruise(cruise.id) : (ctx.people || []);
+            const drinks = cruise ? await this.storage.getDrinksForCruise(cruise.id) : (ctx.drinks || []);
+
+            const result = window.VoiceParser.parseVoiceCommand(transcript, { people, drinks });
+            if (!result.ok) {
+                window.showToast(result.error || "Couldn't parse that.", 'error', 5000);
+                return;
+            }
+
+            this.selectedPeople = result.people;
+            this.multiSelectMode = result.people.length > 1;
+            this.selectedDrink = result.drink;
+            this.drinkPhoto = null;
+            this.drinkPhotoFull = null;
+            await this.render();
+
+            // Scroll to the submit card so it's obvious what to do next.
+            const submitCard = document.getElementById('card-submit');
+            if (submitCard && submitCard.scrollIntoView) {
+                submitCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            const names = result.people.map(p => p.name).join(', ');
+            window.showToast(`${result.drink.name} for ${names} — review and submit.`, 'success', 4000);
+        } catch (error) {
+            console.error('Voice transcript handling failed:', error);
+            window.showToast('Voice input failed: ' + error.message, 'error');
+        }
     }
 
     createDrinkSelectionHTML(drinks) {
@@ -443,6 +518,12 @@ class AddDrinkComponent {
         const addDrinkBtn = document.getElementById('add-drink-btn') || document.getElementById('add-first-drink');
         if (addDrinkBtn) {
             addDrinkBtn.addEventListener('click', () => this.showAddDrinkModal());
+        }
+
+        // Voice input button
+        const voiceBtn = document.getElementById('voice-input-btn');
+        if (voiceBtn) {
+            voiceBtn.addEventListener('click', () => this.handleVoiceClick());
         }
 
         // Modal controls

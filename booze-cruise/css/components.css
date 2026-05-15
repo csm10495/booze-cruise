@@ -2046,3 +2046,110 @@
         max-height: 55vh;
     }
 }
+
+/* ============================================================ */
+/* Voice Input                                                   */
+/* ============================================================ */
+
+.voice-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.5rem 0 1rem 0;
+    flex-wrap: wrap;
+}
+
+.btn-voice {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #1976D2 100%);
+    color: white;
+    border: none;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.btn-voice:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+.btn-voice:active {
+    transform: translateY(0);
+}
+
+.voice-btn-icon {
+    font-size: 1.1rem;
+}
+
+.voice-bar-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted, #888);
+}
+
+.voice-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+.voice-overlay.hidden {
+    display: none;
+}
+
+.voice-overlay-content {
+    background: var(--card-background, #fff);
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    width: min(90vw, 420px);
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.voice-mic {
+    font-size: 4rem;
+    line-height: 1;
+    animation: voice-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes voice-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.7; }
+}
+
+.voice-status {
+    margin-top: 0.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.voice-transcript {
+    margin: 1rem 0 0.5rem 0;
+    min-height: 2.5rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 8px;
+    font-style: italic;
+    color: var(--text-color, #333);
+}
+
+.voice-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted, #888);
+    margin-bottom: 1.25rem;
+}
+
+.voice-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}

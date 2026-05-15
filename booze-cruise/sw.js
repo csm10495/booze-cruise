@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cruise-drink-tracker-v4';
+const CACHE_NAME = 'cruise-drink-tracker-v5';
 const SW_VERSION = CACHE_NAME;
 console.log(`[ServiceWorker] script loaded: ${SW_VERSION}`);
 // Used only when a requested URL isn't already cached. Cached assets are
@@ -21,6 +21,9 @@ const urlsToCache = [
   '/booze-cruise/js/utils/photo.js',
   '/booze-cruise/js/utils/themes.js',
   '/booze-cruise/js/utils/cruise-highlights-exporter.js',
+  '/booze-cruise/js/utils/voice-parser.js',
+  '/booze-cruise/js/utils/voice-engine.js',
+  '/booze-cruise/js/utils/voice-ui.js',
   '/booze-cruise/lib/chart.min.js',
   '/booze-cruise/favicon.ico',
   '/booze-cruise/icon.png',
