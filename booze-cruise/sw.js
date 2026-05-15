@@ -1,4 +1,5 @@
-const CACHE_NAME = 'cruise-drink-tracker-v5';
+const CACHE_NAME = 'cruise-drink-tracker-v6';
+const VOICE_CACHE_NAME = 'cruise-voice-v1';
 const SW_VERSION = CACHE_NAME;
 console.log(`[ServiceWorker] script loaded: ${SW_VERSION}`);
 // Used only when a requested URL isn't already cached. Cached assets are
@@ -148,7 +149,10 @@ function handleFetch(request) {
 
 self.addEventListener('activate', (event) => {
   console.log(`[ServiceWorker] activating: ${SW_VERSION}`);
-  const cacheWhitelist = [CACHE_NAME];
+  // Whitelist the dedicated voice cache so it survives main-cache version
+  // bumps — the user's ~40 MB downloaded model must not be deleted by a
+  // routine app update.
+  const cacheWhitelist = [CACHE_NAME, VOICE_CACHE_NAME];
   event.waitUntil(
     Promise.all([
       // Take control of any already-open pages immediately so they use the

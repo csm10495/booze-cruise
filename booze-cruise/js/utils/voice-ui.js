@@ -54,9 +54,15 @@
             return el;
         }
 
-        show(callbacks) {
+        async show(callbacks) {
             this._callbacks = callbacks || {};
             this._finalReceived = false;
+
+            // Ensure async manager init (Vosk cache probe) has completed
+            // before we decide which engine to use. Without this, offline
+            // users can hit the "no engine available" path before Vosk has
+            // been detected as ready.
+            if (this.manager.whenReady) await this.manager.whenReady();
 
             const engine = this.manager.bestAvailableEngine();
             if (!engine) {

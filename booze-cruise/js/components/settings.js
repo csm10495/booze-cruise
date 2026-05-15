@@ -167,6 +167,33 @@ class SettingsComponent {
                     </div>
                 </div>
 
+                <!-- Voice Input Section -->
+                <div class="settings-section card">
+                    <h3>🎤 Voice Input</h3>
+                    <div class="app-actions">
+                        <div class="action-item">
+                            <div class="action-info">
+                                <strong>Status</strong>
+                                <p id="voice-status-line">Checking…</p>
+                            </div>
+                        </div>
+                        <div class="action-item">
+                            <div class="action-info">
+                                <strong>Offline voice recognition</strong>
+                                <p>Downloads a small English model (~40 MB) so voice works without internet. One-time download, cached on this device.</p>
+                                <div id="voice-download-progress" class="voice-download-progress" style="display: none;">
+                                    <div class="voice-progress-bar"><div class="voice-progress-fill" style="width: 0%"></div></div>
+                                    <div class="voice-progress-text">0%</div>
+                                </div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="voice-offline-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Cruise Modal -->
                 <div id="cruise-modal" class="modal" style="display: none;">
                     <div class="modal-content">
@@ -292,6 +319,9 @@ class SettingsComponent {
         if (installBtn && this.deferredPrompt) {
             installBtn.addEventListener('click', () => this.installPWA());
         }
+
+        // Voice input — wire toggle + initial status refresh
+        this.setupVoiceInputControls();
 
         // Modal controls
         this.setupModalEventListeners();
@@ -1313,6 +1343,117 @@ class SettingsComponent {
         const appVersionElement = document.getElementById('app-version');
         if (appVersionElement) {
             appVersionElement.innerHTML = await this.getAppVersion();
+        }
+    }
+
+    // --- Voice Input controls ---------------------------------------------
+
+    setupVoiceInputControls() {
+        const toggle = document.getElementById('voice-offline-toggle');
+        if (!toggle) return;
+
+        this._refreshVoiceStatus();
+
+        // Reflect persisted state on the toggle.
+        const enabledFlag = window.VoskInstaller
+            ? localStorage.getItem(window.VoskInstaller.localStorageKey) === 'true'
+            : false;
+        toggle.checked = enabledFlag;
+
+        toggle.addEventListener('change', (e) => this._onVoiceToggleChange(e));
+
+        // Keep status live if the user goes online/offline while on this page.
+        if (!this._voiceOnlineListenerAttached) {
+            window.addEventListener('online', () => this._refreshVoiceStatus());
+            window.addEventListener('offline', () => this._refreshVoiceStatus());
+            this._voiceOnlineListenerAttached = true;
+        }
+    }
+
+    async _refreshVoiceStatus() {
+        const statusEl = document.getElementById('voice-status-line');
+        if (!statusEl) return;
+
+        const supported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+        const onLine = typeof navigator === 'undefined' ? true : navigator.onLine !== false;
+        const installed = window.VoskInstaller ? await window.VoskInstaller.isInstalled() : false;
+
+        let line;
+        if (installed) {
+            line = '✅ Offline voice is ready — works without internet.';
+        } else if (supported && onLine) {
+            line = '🌐 Online voice is available via the browser (requires internet).';
+        } else if (supported && !onLine) {
+            line = '⚠️ You are offline. Enable offline voice below to use voice without internet.';
+        } else {
+            line = '❌ Voice input is not supported in this browser.';
+        }
+        statusEl.textContent = line;
+    }
+
+    async _onVoiceToggleChange(event) {
+        const toggle = event.target;
+        const turningOn = toggle.checked;
+
+        if (!window.VoskInstaller) {
+            window.showToast('Voice components missing — try reloading.', 'error');
+            toggle.checked = false;
+            return;
+        }
+
+        if (turningOn) {
+            // Make sure the user knows about the download size before we
+            // start eating bandwidth.
+            const confirmed = confirm(
+                'Download the offline voice model? About 40 MB will be downloaded once and stored on this device.'
+            );
+            if (!confirmed) {
+                toggle.checked = false;
+                return;
+            }
+
+            const progressBox = document.getElementById('voice-download-progress');
+            const fill = progressBox && progressBox.querySelector('.voice-progress-fill');
+            const text = progressBox && progressBox.querySelector('.voice-progress-text');
+            if (progressBox) progressBox.style.display = 'block';
+            toggle.disabled = true;
+
+            try {
+                await window.VoskInstaller.install({
+                    onProgress: (frac) => {
+                        const pct = Math.max(0, Math.min(100, Math.round(frac * 100)));
+                        if (fill) fill.style.width = pct + '%';
+                        if (text) text.textContent = pct + '%';
+                    }
+                });
+                window.showToast('Offline voice ready! Try the 🎤 button on Add Drink.', 'success', 4000);
+            } catch (e) {
+                console.error('Vosk install failed:', e);
+                window.showToast('Download failed: ' + (e.message || 'unknown error'), 'error', 5000);
+                toggle.checked = false;
+                try { await window.VoskInstaller.uninstall(); } catch (cleanupErr) { /* ignore */ }
+            } finally {
+                toggle.disabled = false;
+                if (progressBox) progressBox.style.display = 'none';
+                if (fill) fill.style.width = '0%';
+                if (text) text.textContent = '0%';
+                this._refreshVoiceStatus();
+            }
+        } else {
+            const confirmed = confirm('Remove the offline voice model (~40 MB) from this device?');
+            if (!confirmed) {
+                toggle.checked = true;
+                return;
+            }
+            try {
+                await window.VoskInstaller.uninstall();
+                window.showToast('Offline voice removed.', 'info');
+            } catch (e) {
+                console.error('Vosk uninstall failed:', e);
+                window.showToast('Could not remove offline voice: ' + e.message, 'error');
+            } finally {
+                this._refreshVoiceStatus();
+            }
         }
     }
 }
