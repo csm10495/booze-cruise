@@ -155,6 +155,14 @@ class SettingsComponent {
                             </button>
                         </div>
 
+                        <div class="action-item">
+                            <div class="action-info">
+                                <strong>Update Now</strong>
+                                <p>Force a fresh download of the app. Requires internet.</p>
+                            </div>
+                            <button class="btn" id="update-now-btn">Update</button>
+                        </div>
+
                         <div class="action-item app-version-box">
                             <div class="action-info">
                                 <strong>App Version</strong>
@@ -318,6 +326,24 @@ class SettingsComponent {
         const installBtn = document.getElementById('install-pwa-btn');
         if (installBtn && this.deferredPrompt) {
             installBtn.addEventListener('click', () => this.installPWA());
+        }
+
+        // Update Now — clears the SW caches (preserves Vosk voice cache)
+        // and reloads to fetch fresh app assets.
+        const updateBtn = document.getElementById('update-now-btn');
+        if (updateBtn) {
+            const refreshUpdateButton = () => {
+                const onLine = typeof navigator === 'undefined' ? true : navigator.onLine !== false;
+                updateBtn.disabled = !onLine;
+                updateBtn.textContent = onLine ? 'Update' : 'Offline';
+            };
+            refreshUpdateButton();
+            if (!this._updateOnlineListenerAttached) {
+                window.addEventListener('online', refreshUpdateButton);
+                window.addEventListener('offline', refreshUpdateButton);
+                this._updateOnlineListenerAttached = true;
+            }
+            updateBtn.addEventListener('click', () => this.runUpdateNow());
         }
 
         // Voice input — wire toggle + initial status refresh
@@ -1344,6 +1370,83 @@ class SettingsComponent {
         if (appVersionElement) {
             appVersionElement.innerHTML = await this.getAppVersion();
         }
+    }
+
+    // --- Update Now -------------------------------------------------------
+
+    async runUpdateNow() {
+        const btn = document.getElementById('update-now-btn');
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            window.showToast('No internet — connect and try again.', 'error', 4000);
+            return;
+        }
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Updating…';
+        }
+
+        try {
+            // 1. Ask the active SW to drop its app caches (preserves the
+            //    voice cache so the ~40 MB Vosk model isn't re-downloaded).
+            await this._clearAppCacheViaSw();
+
+            // 2. Tell the SW registration to look for a fresh sw.js. Our
+            //    install handler skipWaiting()'s, so a newer SW will take
+            //    over by the time the page reloads.
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration && registration.update) await registration.update();
+                } catch (e) { /* non-fatal */ }
+            }
+
+            // 3. Reload from the server, bypassing the HTTP cache to make
+            //    sure we don't get a stale bootstrap page.
+            window.location.reload();
+        } catch (e) {
+            console.error('Update Now failed:', e);
+            window.showToast('Update failed: ' + (e.message || e), 'error', 5000);
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Update';
+            }
+        }
+    }
+
+    _clearAppCacheViaSw() {
+        return new Promise((resolve) => {
+            if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+                // No SW controlling the page — nothing to clear via message.
+                // Fall back to clearing caches directly from the page.
+                if ('caches' in window) {
+                    caches.keys().then((names) => Promise.all(
+                        names
+                            .filter((n) => n !== 'cruise-voice-v1')
+                            .map((n) => caches.delete(n))
+                    )).then(() => resolve()).catch(() => resolve());
+                } else {
+                    resolve();
+                }
+                return;
+            }
+            // Set up a one-shot reply listener with a timeout so we never
+            // hang on a SW that doesn't reply.
+            const channel = new MessageChannel();
+            const timeout = setTimeout(() => resolve(), 4000);
+            channel.port1.onmessage = (event) => {
+                clearTimeout(timeout);
+                resolve();
+            };
+            try {
+                navigator.serviceWorker.controller.postMessage(
+                    { type: 'CLEAR_APP_CACHE' },
+                    [channel.port2]
+                );
+            } catch (e) {
+                clearTimeout(timeout);
+                resolve();
+            }
+        });
     }
 
     // --- Voice Input controls ---------------------------------------------

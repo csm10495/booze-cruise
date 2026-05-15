@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cruise-drink-tracker-v15';
+const CACHE_NAME = 'cruise-drink-tracker-v16';
 const VOICE_CACHE_NAME = 'cruise-voice-v1';
 const SW_VERSION = CACHE_NAME;
 console.log(`[ServiceWorker] script loaded: ${SW_VERSION}`);
@@ -180,7 +180,35 @@ self.addEventListener('activate', (event) => {
 // Allow pages to query the active SW version on demand (e.g., right after
 // registration, when the page may have loaded before activate fired).
 self.addEventListener('message', (event) => {
+  // Reply helper that prefers a MessageChannel port (passed in
+  // event.ports[0]) and falls back to the originating client.
+  const reply = (msg) => {
+    const port = event.ports && event.ports[0];
+    if (port) {
+      try { port.postMessage(msg); } catch (e) {}
+    } else if (event.source) {
+      try { event.source.postMessage(msg); } catch (e) {}
+    }
+  };
+
   if (event.data && event.data.type === 'GET_SW_VERSION') {
-    event.source && event.source.postMessage({ type: 'SW_VERSION', version: SW_VERSION });
+    reply({ type: 'SW_VERSION', version: SW_VERSION });
+  } else if (event.data && event.data.type === 'CLEAR_APP_CACHE') {
+    // Triggered by Settings → Update Now. Deletes ALL caches except the
+    // dedicated voice cache so the user's ~40 MB Vosk download isn't
+    // discarded. Replies when done so the page can safely reload.
+    event.waitUntil((async () => {
+      try {
+        const names = await caches.keys();
+        await Promise.all(
+          names
+            .filter((n) => n !== VOICE_CACHE_NAME)
+            .map((n) => caches.delete(n))
+        );
+        reply({ type: 'APP_CACHE_CLEARED' });
+      } catch (e) {
+        reply({ type: 'APP_CACHE_CLEARED', error: String(e) });
+      }
+    })());
   }
 });
