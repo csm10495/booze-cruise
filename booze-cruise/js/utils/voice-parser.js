@@ -142,6 +142,52 @@
         return union === 0 ? 0 : intersect / union;
     }
 
+    // --- Soundex (phonetic matching) -------------------------------------
+
+    // Classic English Soundex codes (B/F/P/V → 1, C/G/J/K/Q/S/X/Z → 2, etc.)
+    // Used as a last-resort match so the parser can recover when the speech
+    // engine returns a phonetically similar word ("coach" for "coke", "ginger"
+    // for "gina", "doc" for "dawn"). Soundex is broad, so we only apply it
+    // after exact / first-name / substring matches have failed.
+    const SOUNDEX_MAP = {
+        b: '1', f: '1', p: '1', v: '1',
+        c: '2', g: '2', j: '2', k: '2', q: '2', s: '2', x: '2', z: '2',
+        d: '3', t: '3',
+        l: '4',
+        m: '5', n: '5',
+        r: '6'
+    };
+    function soundex(word) {
+        if (!word) return '';
+        const w = word.toLowerCase().replace(/[^a-z]/g, '');
+        if (!w) return '';
+        const first = w[0];
+        let prev = SOUNDEX_MAP[first] || '';
+        let out = first.toUpperCase();
+        for (let i = 1; i < w.length && out.length < 4; i++) {
+            const code = SOUNDEX_MAP[w[i]] || '';
+            // Drop vowels (no mapping) and consecutive duplicates.
+            if (code && code !== prev) out += code;
+            // H/W don't affect coding but also don't reset the duplicate-skip;
+            // vowels do reset it.
+            if (w[i] === 'h' || w[i] === 'w') {
+                // keep prev
+            } else if (code) {
+                prev = code;
+            } else {
+                prev = ''; // vowel resets
+            }
+        }
+        return (out + '000').slice(0, 4);
+    }
+
+    // Per-phrase phonetic key: tokenize, soundex each token, join with `-`.
+    // This gives multi-word names a stable phonetic signature ("rum and
+    // coke" → "R500-A530-K200") that survives mishears on any one word.
+    function phoneticKey(s) {
+        return tokens(s).map(soundex).join('-');
+    }
+
     // --- Drink matching --------------------------------------------------
 
     // Returns array of {drink, score} sorted high → low. Score conventions:
@@ -149,12 +195,14 @@
     //    80  transcript phrase ⊂ drink name (safe direction)
     //    60  drink name ⊂ transcript phrase (only if no extra drink-like noise)
     //    40  high jaccard overlap (>= 0.5)
+    //    30  phonetic (soundex) match — catches "coach" → "coke", etc.
     //    20  any jaccard overlap > 0
     function scoreDrinks(phrase, drinks) {
         const normPhrase = stripLeadingQuantity(phrase);
         if (!normPhrase) return [];
 
         const phraseTokens = tokenSet(normPhrase);
+        const phrasePhonetic = phoneticKey(normPhrase);
         const results = [];
 
         for (const drink of drinks) {
@@ -177,6 +225,10 @@
             } else {
                 const overlap = jaccard(phraseTokens, tokenSet(nName));
                 if (overlap >= 0.5) score = 40;
+                else if (phrasePhonetic && phrasePhonetic === phoneticKey(nName)) {
+                    // Pure phonetic match — same soundex signature.
+                    score = 30;
+                }
                 else if (overlap > 0) score = 20;
             }
 
@@ -236,14 +288,19 @@
     //    60  unique substring match (token ⊂ name) where name has only one
     //         such hit across the people list
     //    40  per-token substring match (e.g. token "matt" ⊂ "Matt-Hewson" name token)
+    //    30  phonetic (soundex) match against any name token — catches mishears
+    //         like "ginger" for "Gina" or "doc" for "Dawn".
     //    20  any substring match
     function scorePersonToken(token, people) {
         const nToken = normalize(token);
         if (!nToken) return [];
 
+        const tokenPhonetic = soundex(nToken);
+
         const exact = [];
         const firstName = [];
         const tokenLevel = [];
+        const phonetic = [];
         const substring = [];
 
         for (const person of people) {
@@ -258,11 +315,6 @@
                 firstName.push(person);
                 continue;
             }
-            // Check if any single name token matches the spoken token in
-            // either direction. Handles speech engines that smush parts of
-            // a name together or split them oddly (e.g. "matt" → "matt smith"
-            // by exact-first-token, but also "matter" recognized for "matt"
-            // → "matter".includes("matt")).
             let tokenLevelHit = false;
             for (const nt of nameTokens) {
                 if (nt === nToken || nt.includes(nToken) || nToken.includes(nt)) {
@@ -276,6 +328,18 @@
             }
             if (nName.includes(nToken) || nToken.includes(nName)) {
                 substring.push(person);
+                continue;
+            }
+            // Last-resort phonetic match against each name token. Soundex is
+            // broad (single code for many distinct words) so we only fall
+            // back to it when nothing else matched.
+            if (tokenPhonetic) {
+                for (const nt of nameTokens) {
+                    if (soundex(nt) === tokenPhonetic) {
+                        phonetic.push(person);
+                        break;
+                    }
+                }
             }
         }
 
@@ -285,8 +349,6 @@
             if (firstName.length === 1) {
                 results.push({ person: firstName[0], score: 80 });
             } else if (firstName.length > 1) {
-                // Ambiguous first-name match — surface all of them so the caller
-                // can report which ones.
                 for (const p of firstName) results.push({ person: p, score: 80 });
             } else if (tokenLevel.length === 1) {
                 results.push({ person: tokenLevel[0], score: 40 });
@@ -296,6 +358,10 @@
                 results.push({ person: substring[0], score: 60 });
             } else if (substring.length > 1) {
                 for (const p of substring) results.push({ person: p, score: 20 });
+            } else if (phonetic.length === 1) {
+                results.push({ person: phonetic[0], score: 30 });
+            } else if (phonetic.length > 1) {
+                for (const p of phonetic) results.push({ person: p, score: 30 });
             }
         }
         results.sort((a, b) => b.score - a.score);
