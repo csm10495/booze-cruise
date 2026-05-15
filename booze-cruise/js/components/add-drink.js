@@ -37,8 +37,8 @@ class AddDrinkComponent {
 
         return `
             <div class="add-drink-container progressive-cards">
-                ${this._voiceButtonHTML(people, drinks)}
                 <div class="cards-container">
+                    ${this._voiceButtonHTML(people, drinks)}
                     <!-- Step 1: Select Person(s) (Always visible) -->
                     <div class="progress-card ${this.selectedPeople.length > 0 ? 'completed' : 'active'}" id="card-person">
                         <div class="card-header">
@@ -231,19 +231,29 @@ class AddDrinkComponent {
             (window.SpeechRecognition || window.webkitSpeechRecognition);
         if (!supported) return '';
         this._voiceCtx = { people, drinks };
-        // Build a per-render example phrase using real cruise data so the
-        // hint feels relevant. Cached on the instance so the overlay shows
-        // the same example as the button hint.
         this._voiceExample = this._buildVoiceExample(people, drinks);
-        // HTML-escape the phrase before inlining (drink/person names are
-        // user-supplied).
         const safeExample = this._escapeHtml(this._voiceExample);
+        // Styled to match the other .progress-card steps on this page so
+        // the voice quick-add doesn't look like a stray button. Header
+        // uses the same blue gradient; content puts the mic button on the
+        // left and the example/hint on the right.
         return `
-            <div class="voice-bar">
-                <button type="button" class="btn-voice-mic" id="voice-input-btn" aria-label="Hold to talk">
-                    <span class="voice-btn-icon" aria-hidden="true">🎤</span>
-                </button>
-                <span class="voice-bar-hint">Hold &amp; say "${safeExample}", then release</span>
+            <div class="progress-card voice-card">
+                <div class="card-header">
+                    <h3>🎤 Voice Quick Add</h3>
+                </div>
+                <div class="card-content">
+                    <div class="voice-card-row">
+                        <button type="button" class="btn-voice-mic" id="voice-input-btn" aria-label="Hold to talk">
+                            <span class="voice-btn-icon" aria-hidden="true">🎤</span>
+                        </button>
+                        <div class="voice-card-hint">
+                            <div class="voice-card-hint-title">Hold the mic and say:</div>
+                            <div class="voice-card-hint-example">"${safeExample}"</div>
+                            <div class="voice-card-hint-sub">Release to submit.</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     }

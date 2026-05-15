@@ -2286,3 +2286,50 @@
     pointer-events: none;
     line-height: 1;
 }
+
+
+/* ============================================================ */
+/* Voice Quick Add card                                          */
+/* ============================================================ */
+
+.progress-card.voice-card {
+    /* Match the active-card border colour so this looks like a peer of
+       the workflow steps without claiming "you're on this step". */
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 16px rgba(33, 150, 243, 0.15);
+}
+
+.voice-card-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.voice-card-row .btn-voice-mic {
+    flex-shrink: 0;
+}
+
+.voice-card-hint {
+    flex: 1;
+    min-width: 0;
+}
+
+.voice-card-hint-title {
+    font-size: 0.85rem;
+    color: var(--text-muted, #888);
+    margin-bottom: 0.2rem;
+}
+
+.voice-card-hint-example {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color, #222);
+    overflow-wrap: anywhere;
+    line-height: 1.3;
+}
+
+.voice-card-hint-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted, #888);
+    margin-top: 0.25rem;
+}
