@@ -257,10 +257,13 @@ class AddDrinkComponent {
         }
         const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
         const drink = pickRandom(drinks).name;
-        if (people.length === 1) {
-            return `${drink} for ${people[0].name}`;
+        // When 2+ people are available, randomly use 1 or 2 in the example
+        // so users see both single-person and multi-person phrasings over
+        // time instead of being trained to always say "and".
+        const useTwo = people.length >= 2 && Math.random() < 0.5;
+        if (!useTwo) {
+            return `${drink} for ${pickRandom(people).name}`;
         }
-        // Pick two distinct people.
         const i = Math.floor(Math.random() * people.length);
         let j = Math.floor(Math.random() * (people.length - 1));
         if (j >= i) j++;
