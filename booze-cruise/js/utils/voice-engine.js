@@ -66,7 +66,11 @@
             return this._supported && (typeof navigator === 'undefined' || navigator.onLine !== false);
         }
 
-        start() {
+        start(options) {
+            options = options || {};
+            // In push-to-talk mode we don't auto-stop on silence — the
+            // caller (UI) decides when to stop via release.
+            const disableAutoStop = !!options.disableAutoStop;
             if (!this._supported) {
                 this._errorCb && this._errorCb({
                     code: 'unsupported',
@@ -83,41 +87,19 @@
             }
 
             const recog = new this._ctor();
-            // Force English explicitly. navigator.language can be variants
-            // like 'en-AU' or even non-English locales when the user's OS
-            // language doesn't match their drink/people names, which tanks
-            // accuracy. The drinks and people in this app are entered in
-            // English so we recognize in English regardless of the user's
-            // browser locale.
             recog.lang = 'en-US';
             recog.interimResults = true;
-            // Ask for several alternatives so the parser can try them all
-            // when the top-1 misheard the drink or person names.
             recog.maxAlternatives = 5;
-            // Continuous mode prevents the engine from auto-stopping at the
-            // first pause. Without this, "Coke for Matt and ... Gina"
-            // (with any hesitation) was being cut off after "Matt". We
-            // implement our own silence-based finalize below.
             recog.continuous = true;
 
-            // Accumulated final transcripts across the whole session. The
-            // engine fires onresult repeatedly as utterances finalize;
-            // we collect everything and emit once at the end.
             this._accumulatedFinal = '';
             this._accumulatedAlternatives = [];
-            // After each interim/final result, restart a short silence
-            // timer. When it fires we gracefully stop the engine, which
-            // triggers onend → our final-callback.
             this._silenceTimer = null;
             const resetSilenceTimer = () => {
-                // Don't re-arm after we've already initiated stop. Without
-                // this guard, a late onresult delivery between recog.stop()
-                // and onend could push the silence timer further into the
-                // future and keep the engine "alive" past the user's intent.
+                if (disableAutoStop) return; // push-to-talk: only release stops
                 if (this._stopping) return;
                 if (this._silenceTimer) clearTimeout(this._silenceTimer);
                 this._silenceTimer = setTimeout(() => {
-                    // Stop on silence; onend will deliver the accumulated text.
                     if (this._recog && !this._stopping) {
                         this._stopping = true;
                         try { this._recog.stop(); } catch (e) { /* ignored */ }
@@ -338,7 +320,9 @@
             this._model = await Vosk.createModel(modelUrl);
         }
 
-        async start() {
+        async start(options) {
+            options = options || {};
+            const disableAutoStop = !!options.disableAutoStop;
             try {
                 if (!global.navigator || !navigator.mediaDevices) {
                     throw new Error('Microphone access is not supported in this browser.');
@@ -355,8 +339,6 @@
                     video: false
                 });
 
-                // Build the AudioContext FIRST so we know its actual sample
-                // rate, then construct the recognizer at the matching rate.
                 this._audioContext = new (global.AudioContext || global.webkitAudioContext)();
                 const actualSampleRate = this._audioContext.sampleRate;
 
@@ -364,7 +346,8 @@
                 this._silenceTimer = null;
                 this._stopped = false;
                 const resetSilence = () => {
-                    if (this._stopped) return; // guard: don't re-arm after stop
+                    if (disableAutoStop) return; // push-to-talk
+                    if (this._stopped) return;
                     if (this._silenceTimer) clearTimeout(this._silenceTimer);
                     this._silenceTimer = setTimeout(() => this.stop(), VOSK_SILENCE_MS);
                 };

@@ -23,6 +23,11 @@
             this._callbacks = null;
             this._finalReceived = false;
             this._cancelled = false;
+            this._pushToTalk = false;
+            // In PTT mode, track whether the user has already released so
+            // we can stop the engine as soon as it becomes ready (handles
+            // the case where the user lets go before the mic is hot).
+            this._releaseRequested = false;
         }
 
         _ensureDom() {
@@ -37,8 +42,8 @@
                     <div class="voice-mic" aria-hidden="true">🎤</div>
                     <div class="voice-status">Listening…</div>
                     <div class="voice-transcript" id="voice-transcript"></div>
-                    <div class="voice-hint">Say something like<br><strong>"Coke for Matt and Gina"</strong><br><span class="voice-subhint">Pause when finished, or tap Done</span></div>
-                    <div class="voice-actions">
+                    <div class="voice-hint" id="voice-hint">Say something like<br><strong>"Coke for Matt and Gina"</strong><br><span class="voice-subhint">Pause when finished, or tap Done</span></div>
+                    <div class="voice-actions" id="voice-actions">
                         <button type="button" class="btn btn-outline" id="voice-cancel">Cancel</button>
                         <button type="button" class="btn" id="voice-stop">Done</button>
                     </div>
@@ -49,21 +54,24 @@
             el.querySelector('#voice-cancel').addEventListener('click', () => this._cancel());
             el.querySelector('#voice-stop').addEventListener('click', () => this._stop());
             el.addEventListener('click', (e) => {
-                if (e.target === el) this._cancel();
+                // Tapping the dim background only cancels in tap-to-talk mode
+                // — in PTT mode the overlay is dismissed by releasing the
+                // physical button, so a stray background tap would be confusing.
+                if (e.target === el && !this._pushToTalk) this._cancel();
             });
 
             return el;
         }
 
-        async show(callbacks) {
+        async show(callbacks, options) {
             this._callbacks = callbacks || {};
             this._finalReceived = false;
             this._cancelled = false;
+            this._releaseRequested = false;
+            this._pushToTalk = !!(options && options.pushToTalk);
 
             // Ensure async manager init (Vosk cache probe) has completed
-            // before we decide which engine to use. Without this, offline
-            // users can hit the "no engine available" path before Vosk has
-            // been detected as ready.
+            // before we decide which engine to use.
             if (this.manager.whenReady) await this.manager.whenReady();
 
             const engine = this.manager.bestAvailableEngine();
@@ -77,13 +85,27 @@
             el.classList.remove('hidden');
             const transcriptEl = el.querySelector('#voice-transcript');
             const statusEl = el.querySelector('.voice-status');
+            const hintEl = el.querySelector('#voice-hint');
+            const actionsEl = el.querySelector('#voice-actions');
             transcriptEl.textContent = '';
-            // Show an initializing state until the engine confirms the mic
-            // is actually live (via onAudioStart). For Web Speech this fixes
-            // the "I tapped the button but nothing's happening" feeling.
-            // For Vosk it also covers the model-deserialize delay.
             statusEl.textContent = 'Initializing…';
             el.classList.add('voice-initializing');
+
+            // PTT visual customization: hint says "Hold to talk", action
+            // buttons are hidden (release controls the lifecycle).
+            if (this._pushToTalk) {
+                el.classList.add('voice-ptt');
+                if (hintEl) hintEl.innerHTML =
+                    'Say something like<br><strong>"Coke for Matt and Gina"</strong><br>' +
+                    '<span class="voice-subhint">Release the button to submit</span>';
+                if (actionsEl) actionsEl.style.display = 'none';
+            } else {
+                el.classList.remove('voice-ptt');
+                if (hintEl) hintEl.innerHTML =
+                    'Say something like<br><strong>"Coke for Matt and Gina"</strong><br>' +
+                    '<span class="voice-subhint">Pause when finished, or tap Done</span>';
+                if (actionsEl) actionsEl.style.display = '';
+            }
 
             this.engine = engine;
 
@@ -92,6 +114,9 @@
                 statusEl.textContent = 'Listening…';
                 el.classList.remove('voice-initializing');
                 el.classList.add('voice-listening');
+                // If the user already released while we were warming up,
+                // honor that now.
+                if (this._releaseRequested) this._stop();
             });
 
             engine.onPartialResult((text) => {
@@ -99,8 +124,6 @@
                 transcriptEl.textContent = text;
             });
             engine.onFinalResult((text, alternatives) => {
-                // If the user cancelled, the engine's stop() may still
-                // deliver an accumulated final — drop it.
                 if (this._cancelled) return;
                 transcriptEl.textContent = text;
                 this._finalReceived = true;
@@ -114,8 +137,6 @@
                 this._callbacks.onError && this._callbacks.onError(err);
             });
             engine.onEnd(() => {
-                // The engine ended without firing a final result and without
-                // an explicit cancel — treat as a soft cancel.
                 if (this._cancelled) return;
                 if (!this._finalReceived) {
                     this._hide();
@@ -123,7 +144,16 @@
                 }
             });
 
-            engine.start();
+            engine.start({ disableAutoStop: this._pushToTalk });
+        }
+
+        // Public API for push-to-talk: caller invokes this on button release.
+        release() {
+            if (!this._pushToTalk) return;
+            this._releaseRequested = true;
+            // If audio hasn't started yet, the audiostart handler will pick
+            // up the request and call _stop() when ready. Otherwise stop now.
+            if (this.engine) this._stop();
         }
 
         _stop() {
@@ -152,7 +182,7 @@
             const el = document.getElementById(OVERLAY_ID);
             if (el) {
                 el.classList.add('hidden');
-                el.classList.remove('voice-initializing', 'voice-listening');
+                el.classList.remove('voice-initializing', 'voice-listening', 'voice-ptt');
             }
             this.engine = null;
         }

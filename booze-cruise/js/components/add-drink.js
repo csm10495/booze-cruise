@@ -235,16 +235,17 @@ class AddDrinkComponent {
         this._voiceCtx = { people, drinks };
         return `
             <div class="voice-bar">
-                <button type="button" class="btn btn-voice" id="voice-input-btn" aria-label="Voice input">
+                <button type="button" class="btn btn-voice" id="voice-input-btn" aria-label="Hold to talk">
                     <span class="voice-btn-icon" aria-hidden="true">🎤</span>
-                    <span class="voice-btn-label">Voice</span>
+                    <span class="voice-btn-label">Hold to Talk</span>
                 </button>
-                <span class="voice-bar-hint">Say "Coke for Matt and Gina"</span>
+                <span class="voice-bar-hint">Hold the button, say "Coke for Matt and Gina", release</span>
             </div>
         `;
     }
 
-    handleVoiceClick() {
+    _startVoicePress() {
+        if (this._voiceActive) return;
         if (!window.VoiceManager || !window.VoiceOverlay || !window.VoiceParser) {
             window.showToast('Voice input is not available.', 'error');
             return;
@@ -252,13 +253,31 @@ class AddDrinkComponent {
         if (!this._voiceManager) this._voiceManager = new window.VoiceManager();
         if (!this._voiceOverlay) this._voiceOverlay = new window.VoiceOverlay(this._voiceManager);
 
+        this._voiceActive = true;
         this._voiceOverlay.show({
-            onResult: (transcript, alternatives) => this._applyVoiceTranscript(transcript, alternatives),
+            onResult: (transcript, alternatives) => {
+                this._voiceActive = false;
+                this._applyVoiceTranscript(transcript, alternatives);
+            },
             onError: (err) => {
+                this._voiceActive = false;
                 window.showToast(err.message || 'Voice input failed.', 'error', 4000);
             },
-            onCancel: () => { /* silent */ }
-        });
+            onCancel: () => {
+                this._voiceActive = false;
+            }
+        }, { pushToTalk: true });
+    }
+
+    _endVoicePress() {
+        if (!this._voiceActive) return;
+        if (this._voiceOverlay) this._voiceOverlay.release();
+    }
+
+    _cancelVoicePress() {
+        if (!this._voiceActive) return;
+        if (this._voiceOverlay && this._voiceOverlay._cancel) this._voiceOverlay._cancel();
+        this._voiceActive = false;
     }
 
     async _applyVoiceTranscript(transcript, alternatives) {
@@ -538,10 +557,53 @@ class AddDrinkComponent {
             addDrinkBtn.addEventListener('click', () => this.showAddDrinkModal());
         }
 
-        // Voice input button
+        // Voice input button — push-to-talk: press starts listening,
+        // release submits the heard transcript. Pointer capture keeps the
+        // release event on the button even if the user's finger slides off.
         const voiceBtn = document.getElementById('voice-input-btn');
         if (voiceBtn) {
-            voiceBtn.addEventListener('click', () => this.handleVoiceClick());
+            voiceBtn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                // Capture so subsequent pointer events fire on this element
+                // regardless of finger/cursor position.
+                try { voiceBtn.setPointerCapture(e.pointerId); } catch (_) {}
+                voiceBtn.classList.add('pressed');
+                this._startVoicePress();
+            });
+            const release = (e) => {
+                if (!voiceBtn.classList.contains('pressed')) return;
+                voiceBtn.classList.remove('pressed');
+                try { voiceBtn.releasePointerCapture(e.pointerId); } catch (_) {}
+                this._endVoicePress();
+            };
+            voiceBtn.addEventListener('pointerup', release);
+            voiceBtn.addEventListener('pointercancel', release);
+            // Keyboard accessibility: holding Space/Enter while focused
+            // works as press-and-hold.
+            voiceBtn.addEventListener('keydown', (e) => {
+                if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
+                    e.preventDefault();
+                    voiceBtn.classList.add('pressed');
+                    this._startVoicePress();
+                }
+            });
+            voiceBtn.addEventListener('keyup', (e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    if (voiceBtn.classList.contains('pressed')) {
+                        voiceBtn.classList.remove('pressed');
+                        this._endVoicePress();
+                    }
+                }
+            });
+            // If focus leaves while pressed, treat as release so we don't
+            // strand an open mic.
+            voiceBtn.addEventListener('blur', () => {
+                if (voiceBtn.classList.contains('pressed')) {
+                    voiceBtn.classList.remove('pressed');
+                    this._endVoicePress();
+                }
+            });
         }
 
         // Modal controls

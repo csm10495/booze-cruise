@@ -2203,3 +2203,26 @@
 .voice-overlay.voice-listening .voice-mic {
     color: var(--primary-color);
 }
+
+
+/* Push-to-talk button visuals */
+.btn-voice {
+    /* Prevent default touch behaviours (text selection, double-tap zoom,
+       long-press context menu) so press-and-hold is reliable on mobile. */
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.btn-voice.pressed {
+    transform: scale(0.97);
+    box-shadow: 0 1px 4px rgba(33, 150, 243, 0.5) inset, 0 0 0 4px rgba(33, 150, 243, 0.25);
+    filter: brightness(1.05);
+}
+
+/* PTT-mode overlay: actions are hidden, hint changes are handled in JS,
+   no background-click cancel since release is the lifecycle. */
+.voice-overlay.voice-ptt .voice-overlay-content {
+    pointer-events: none;
+}
