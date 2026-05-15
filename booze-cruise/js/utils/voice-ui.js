@@ -78,9 +78,21 @@
             const transcriptEl = el.querySelector('#voice-transcript');
             const statusEl = el.querySelector('.voice-status');
             transcriptEl.textContent = '';
-            statusEl.textContent = 'Listening…';
+            // Show an initializing state until the engine confirms the mic
+            // is actually live (via onAudioStart). For Web Speech this fixes
+            // the "I tapped the button but nothing's happening" feeling.
+            // For Vosk it also covers the model-deserialize delay.
+            statusEl.textContent = 'Initializing…';
+            el.classList.add('voice-initializing');
 
             this.engine = engine;
+
+            engine.onAudioStart && engine.onAudioStart(() => {
+                if (this._cancelled) return;
+                statusEl.textContent = 'Listening…';
+                el.classList.remove('voice-initializing');
+                el.classList.add('voice-listening');
+            });
 
             engine.onPartialResult((text) => {
                 if (this._cancelled) return;
@@ -115,9 +127,15 @@
         }
 
         _stop() {
-            // User tapped "Done" — ask the engine to finalize. The final
-            // result will fire via onFinalResult or onEnd.
-            if (this.engine) this.engine.stop();
+            // User tapped "Done" — show a brief "Processing…" state so they
+            // can see we've heard them and aren't still recording, then ask
+            // the engine to finalize. The final result will arrive via
+            // onFinalResult or onEnd shortly.
+            if (this.engine) {
+                const statusEl = document.querySelector('#' + OVERLAY_ID + ' .voice-status');
+                if (statusEl) statusEl.textContent = 'Processing…';
+                this.engine.stop();
+            }
         }
 
         _cancel() {
@@ -132,7 +150,10 @@
 
         _hide() {
             const el = document.getElementById(OVERLAY_ID);
-            if (el) el.classList.add('hidden');
+            if (el) {
+                el.classList.add('hidden');
+                el.classList.remove('voice-initializing', 'voice-listening');
+            }
             this.engine = null;
         }
     }

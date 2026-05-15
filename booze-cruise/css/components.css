@@ -2192,3 +2192,14 @@
     font-size: 0.78rem;
     opacity: 0.7;
 }
+
+
+/* Tone down the mic pulse + dim the overlay slightly while initializing,
+   so users see we're warming up the engine rather than already listening. */
+.voice-overlay.voice-initializing .voice-mic {
+    animation: none;
+    opacity: 0.55;
+}
+.voice-overlay.voice-listening .voice-mic {
+    color: var(--primary-color);
+}

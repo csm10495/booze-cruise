@@ -25,11 +25,16 @@
             this._finalCb = null;
             this._errorCb = null;
             this._endCb = null;
+            this._audioStartCb = null;
         }
         onPartialResult(cb) { this._partialCb = cb; }
         onFinalResult(cb) { this._finalCb = cb; }
         onError(cb) { this._errorCb = cb; }
         onEnd(cb) { this._endCb = cb; }
+        // Fires when the microphone is actually hot and the engine is ready
+        // to accept speech. UI uses this to switch from "Initializing…" to
+        // "Listening…" so the user knows when to start speaking.
+        onAudioStart(cb) { this._audioStartCb = cb; }
         isAvailable() { return false; }
         start() { throw new Error('not implemented'); }
         stop() { throw new Error('not implemented'); }
@@ -105,6 +110,11 @@
             // triggers onend → our final-callback.
             this._silenceTimer = null;
             const resetSilenceTimer = () => {
+                // Don't re-arm after we've already initiated stop. Without
+                // this guard, a late onresult delivery between recog.stop()
+                // and onend could push the silence timer further into the
+                // future and keep the engine "alive" past the user's intent.
+                if (this._stopping) return;
                 if (this._silenceTimer) clearTimeout(this._silenceTimer);
                 this._silenceTimer = setTimeout(() => {
                     // Stop on silence; onend will deliver the accumulated text.
@@ -115,7 +125,18 @@
                 }, WEB_SPEECH_SILENCE_MS);
             };
 
+            // Fired by the engine when it begins capturing audio. Use this
+            // (not onstart) so the UI flips to "Listening…" only after the
+            // mic is genuinely hot.
+            recog.onaudiostart = () => {
+                this._audioStartCb && this._audioStartCb();
+            };
+
             recog.onresult = (event) => {
+                // Ignore results that arrive after we've decided to stop —
+                // they can otherwise re-arm the silence timer or pollute
+                // the accumulated transcript with post-stop noise.
+                if (this._stopping) return;
                 let interim = '';
                 let newFinal = '';
                 let newAlternatives = [];
@@ -132,10 +153,6 @@
                 }
                 if (newFinal) {
                     this._accumulatedFinal = (this._accumulatedFinal + ' ' + newFinal).trim();
-                    // Build the top-N composite alternatives by appending
-                    // each new alternative to the accumulated top final.
-                    // This is approximate but works in practice — the
-                    // parser tries each in order until one matches.
                     if (this._accumulatedAlternatives.length === 0) {
                         this._accumulatedAlternatives = newAlternatives.slice();
                     } else {
@@ -145,7 +162,6 @@
                                 merged.push((acc + ' ' + alt).trim());
                             }
                         }
-                        // Cap to keep parser work bounded.
                         this._accumulatedAlternatives = merged.slice(0, 8);
                     }
                 }
@@ -306,6 +322,20 @@
             const optIn = localStorage.getItem(VOSK_LOCALSTORAGE_KEY) === 'true';
             if (!optIn) { this._available = false; return; }
             this._available = await voskAssetsCached();
+            // If offline is enabled, prewarm the model in the background so
+            // the first 🎤 tap doesn't pay the 1-5 second model-deserialize
+            // cost. Failures here are silent — start() retries with full
+            // error reporting if the prewarm didn't complete.
+            if (this._available) {
+                this._prewarm().catch(() => {});
+            }
+        }
+
+        async _prewarm() {
+            if (this._model) return;
+            const Vosk = await ensureVoskLibLoaded();
+            const modelUrl = await getVoskModelUrl();
+            this._model = await Vosk.createModel(modelUrl);
         }
 
         async start() {
@@ -327,27 +357,21 @@
 
                 // Build the AudioContext FIRST so we know its actual sample
                 // rate, then construct the recognizer at the matching rate.
-                // getUserMedia's sampleRate constraint is just a hint —
-                // browsers commonly run AudioContext at 44.1 kHz or 48 kHz.
-                // Initializing the recognizer at the wrong rate produces
-                // garbled / unintelligible recognition, which was the
-                // primary reason offline recognition was "terrible".
                 this._audioContext = new (global.AudioContext || global.webkitAudioContext)();
                 const actualSampleRate = this._audioContext.sampleRate;
 
-                // Accumulate Vosk's per-utterance results. Vosk auto-detects
-                // end-of-utterance and emits 'result', so the user pausing
-                // mid-phrase fires a result here. We collect all of them
-                // and emit a single combined final at stop() time.
                 this._accumulatedFinal = '';
                 this._silenceTimer = null;
+                this._stopped = false;
                 const resetSilence = () => {
+                    if (this._stopped) return; // guard: don't re-arm after stop
                     if (this._silenceTimer) clearTimeout(this._silenceTimer);
                     this._silenceTimer = setTimeout(() => this.stop(), VOSK_SILENCE_MS);
                 };
 
                 this._recognizer = new this._model.KaldiRecognizer(actualSampleRate);
                 this._recognizer.on('result', (message) => {
+                    if (this._stopped) return;
                     const text = (message && message.result && message.result.text) || '';
                     if (text) {
                         this._accumulatedFinal = (this._accumulatedFinal + ' ' + text).trim();
@@ -356,6 +380,7 @@
                     }
                 });
                 this._recognizer.on('partialresult', (message) => {
+                    if (this._stopped) return;
                     const partial = (message && message.result && message.result.partial) || '';
                     if (partial) {
                         const liveText = (this._accumulatedFinal + ' ' + partial).trim();
@@ -372,6 +397,9 @@
                 this._sourceNode = this._audioContext.createMediaStreamSource(this._mediaStream);
                 this._sourceNode.connect(this._processorNode);
                 this._processorNode.connect(this._audioContext.destination);
+
+                // Audio nodes are now wired up — mic is genuinely live.
+                this._audioStartCb && this._audioStartCb();
             } catch (e) {
                 // Translate common failures into the same error codes the
                 // Web Speech engine uses so the UI logic is uniform.
@@ -386,6 +414,8 @@
         }
 
         stop() {
+            if (this._stopped) return;
+            this._stopped = true;
             if (this._silenceTimer) { clearTimeout(this._silenceTimer); this._silenceTimer = null; }
             const finalText = (this._accumulatedFinal || '').trim();
             try { if (this._processorNode) this._processorNode.disconnect(); } catch (e) {}
