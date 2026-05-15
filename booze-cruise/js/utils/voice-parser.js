@@ -89,18 +89,62 @@
         const stripped = stripCommas(normalizedTranscript);
         const tokens = stripped.split(' ');
         const splits = [];
+
+        // (1) Clean connector splits: a token that IS a connector word.
         for (let i = 1; i < tokens.length - 1; i++) {
             if (CONNECTOR_TOKENS.has(tokens[i])) {
                 splits.push({
                     left: tokens.slice(0, i).join(' '),
                     right: tokens.slice(i + 1).join(' '),
-                    // Locate the connector in the ORIGINAL normalized
-                    // transcript so the right side can keep its commas
-                    // intact for splitPeoplePhrase().
                     rightWithCommas: extractRightWithCommas(normalizedTranscript, tokens[i], i)
                 });
             }
         }
+
+        // (2) Connector-prefix splits: speech engines frequently glue
+        // a connector word onto the following name as one token
+        // ("for matt" → "format", "to gina" → "togina", "four matt" →
+        // "fourmatt"). These mishears are common because the language
+        // model prefers fluent English over "preposition + name".
+        // When we see a multi-character token that starts with a known
+        // connector and has at least two characters of remainder, treat
+        // that boundary as a candidate split.
+        for (let i = 0; i < tokens.length; i++) {
+            const t = tokens[i];
+            if (CONNECTOR_TOKENS.has(t)) continue; // already covered by (1)
+            for (const conn of CONNECTOR_TOKENS) {
+                if (t.length > conn.length + 1 && t.startsWith(conn)) {
+                    const remainder = t.slice(conn.length);
+                    const leftTokens = tokens.slice(0, i);
+                    const rightTokens = [remainder, ...tokens.slice(i + 1)];
+                    // For people splitting we also need a comma-preserving
+                    // right side. Rebuild from the original (with-commas)
+                    // tokenization, but substitute the broken token.
+                    const rawTokens = normalizedTranscript.split(' ');
+                    // Find the raw token index whose comma-stripped form
+                    // matches `t` at the same stripped-index `i`.
+                    let strippedIndex = 0;
+                    let rawIndex = -1;
+                    for (let k = 0; k < rawTokens.length; k++) {
+                        const cleaned = rawTokens[k].replace(/,/g, '');
+                        if (!cleaned) continue;
+                        if (strippedIndex === i) { rawIndex = k; break; }
+                        strippedIndex++;
+                    }
+                    const rightWithCommas = rawIndex >= 0
+                        ? [remainder, ...rawTokens.slice(rawIndex + 1)].join(' ')
+                        : rightTokens.join(' ');
+
+                    splits.push({
+                        left: leftTokens.join(' '),
+                        right: rightTokens.join(' '),
+                        rightWithCommas
+                    });
+                    break;
+                }
+            }
+        }
+
         return splits;
     }
 
