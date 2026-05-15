@@ -230,17 +230,47 @@ class AddDrinkComponent {
         const supported = typeof window.VoiceManager === 'function' &&
             (window.SpeechRecognition || window.webkitSpeechRecognition);
         if (!supported) return '';
-        // We stash the people/drinks lists already loaded by render() so the
-        // voice handler doesn't have to hit storage again.
         this._voiceCtx = { people, drinks };
+        // Build a per-render example phrase using real cruise data so the
+        // hint feels relevant. Cached on the instance so the overlay shows
+        // the same example as the button hint.
+        this._voiceExample = this._buildVoiceExample(people, drinks);
+        // HTML-escape the phrase before inlining (drink/person names are
+        // user-supplied).
+        const safeExample = this._escapeHtml(this._voiceExample);
         return `
             <div class="voice-bar">
                 <button type="button" class="btn-voice-mic" id="voice-input-btn" aria-label="Hold to talk">
                     <span class="voice-btn-icon" aria-hidden="true">🎤</span>
                 </button>
-                <span class="voice-bar-hint">Hold &amp; say "Coke for Matt and Gina", then release</span>
+                <span class="voice-bar-hint">Hold &amp; say "${safeExample}", then release</span>
             </div>
         `;
+    }
+
+    // Pick a real drink + 1-2 real people from the current cruise to use
+    // as a concrete example. Falls back to a generic phrase when the
+    // cruise has no data yet (first run).
+    _buildVoiceExample(people, drinks) {
+        if (!drinks || !drinks.length || !people || !people.length) {
+            return 'Coke for Matt and Gina';
+        }
+        const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const drink = pickRandom(drinks).name;
+        if (people.length === 1) {
+            return `${drink} for ${people[0].name}`;
+        }
+        // Pick two distinct people.
+        const i = Math.floor(Math.random() * people.length);
+        let j = Math.floor(Math.random() * (people.length - 1));
+        if (j >= i) j++;
+        return `${drink} for ${people[i].name} and ${people[j].name}`;
+    }
+
+    _escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, (c) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
     }
 
     _startVoicePress() {
@@ -265,7 +295,7 @@ class AddDrinkComponent {
             onCancel: () => {
                 this._voiceActive = false;
             }
-        }, { pushToTalk: true });
+        }, { pushToTalk: true, examplePhrase: this._voiceExample });
     }
 
     _endVoicePress() {

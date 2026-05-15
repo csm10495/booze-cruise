@@ -91,18 +91,26 @@
             statusEl.textContent = 'Initializing…';
             el.classList.add('voice-initializing');
 
-            // PTT visual customization: hint says "Hold to talk", action
-            // buttons are hidden (release controls the lifecycle).
+            // Build the example phrase. Caller can pass examplePhrase to
+            // pin a real cruise drink/person; otherwise fall back to a
+            // generic placeholder.
+            const exampleRaw = (options && options.examplePhrase) || 'Coke for Matt and Gina';
+            const example = String(exampleRaw).replace(/[&<>"']/g, (c) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+
+            // PTT visual customization: hint says "Release the button to
+            // submit", action buttons are hidden.
             if (this._pushToTalk) {
                 el.classList.add('voice-ptt');
                 if (hintEl) hintEl.innerHTML =
-                    'Say something like<br><strong>"Coke for Matt and Gina"</strong><br>' +
+                    'Say something like<br><strong>"' + example + '"</strong><br>' +
                     '<span class="voice-subhint">Release the button to submit</span>';
                 if (actionsEl) actionsEl.style.display = 'none';
             } else {
                 el.classList.remove('voice-ptt');
                 if (hintEl) hintEl.innerHTML =
-                    'Say something like<br><strong>"Coke for Matt and Gina"</strong><br>' +
+                    'Say something like<br><strong>"' + example + '"</strong><br>' +
                     '<span class="voice-subhint">Pause when finished, or tap Done</span>';
                 if (actionsEl) actionsEl.style.display = '';
             }
