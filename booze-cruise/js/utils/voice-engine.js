@@ -206,6 +206,22 @@
                 try { this._recog.stop(); } catch (e) { /* already stopped */ }
             }
         }
+
+        // Immediate teardown — drops any in-flight or buffered transcript.
+        // Use this for explicit cancel; use stop() to gracefully finalize.
+        abort() {
+            if (this._silenceTimer) { clearTimeout(this._silenceTimer); this._silenceTimer = null; }
+            this._accumulatedFinal = '';
+            this._accumulatedAlternatives = [];
+            if (this._recog && !this._stopping) {
+                this._stopping = true;
+                try { this._recog.abort(); } catch (e) {
+                    // Some browsers throw if abort() called before audio
+                    // started. Fall back to stop() which is also fine.
+                    try { this._recog.stop(); } catch (e2) {}
+                }
+            }
+        }
     }
 
     // --- Vosk (offline) engine -------------------------------------------
@@ -410,6 +426,17 @@
             this._accumulatedFinal = '';
             if (finalText && this._finalCb) this._finalCb(finalText, [finalText]);
             this._endCb && this._endCb();
+        }
+
+        // Drop the accumulated transcript and tear down immediately. For
+        // Vosk this is essentially the same as stop() but skips emitting
+        // the final, so the caller's onResult is not invoked.
+        abort() {
+            this._accumulatedFinal = '';
+            const finalCb = this._finalCb;
+            this._finalCb = null; // suppress emit during stop()
+            this.stop();
+            this._finalCb = finalCb;
         }
     }
 

@@ -169,11 +169,17 @@
         }
 
         _cancel() {
-            // Mark cancelled BEFORE stopping so the engine's stop() doesn't
-            // route a final transcript through onFinalResult to the caller.
+            // Mark cancelled BEFORE aborting so any racing callbacks bail out.
             this._cancelled = true;
             this._finalReceived = true;
-            if (this.engine) this.engine.stop();
+            // abort() (vs stop()) tears down the engine immediately and
+            // discards any in-flight transcript. Without this the recognizer
+            // could keep "listening" briefly after the user hit Cancel as
+            // it gracefully drained.
+            if (this.engine) {
+                if (typeof this.engine.abort === 'function') this.engine.abort();
+                else this.engine.stop();
+            }
             this._hide();
             this._callbacks && this._callbacks.onCancel && this._callbacks.onCancel();
         }
