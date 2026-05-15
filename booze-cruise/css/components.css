@@ -2226,3 +2226,63 @@
 .voice-overlay.voice-ptt .voice-overlay-content {
     pointer-events: none;
 }
+
+
+/* ============================================================ */
+/* Push-to-talk mic button (icon-only, circular)                 */
+/* ============================================================ */
+
+.btn-voice-mic,
+.btn-voice-mic * {
+    /* Suppress every long-press affordance both Android and iOS use:
+       text selection, callout preview, tap highlight, drag-to-select.
+       Applied to children too because the emoji span would otherwise
+       inherit user-select:auto from .btn defaults. */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-drag: none;
+}
+
+.btn-voice-mic {
+    /* Stop the browser routing the gesture to scroll/zoom/pan/select. */
+    touch-action: none;
+
+    /* Icon button styling. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #1976D2 100%);
+    color: white;
+    font-size: 1.6rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.35);
+    transition: transform 0.08s ease, box-shadow 0.2s ease;
+}
+
+.btn-voice-mic:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
+}
+
+.btn-voice-mic.pressed {
+    transform: scale(0.93);
+    box-shadow:
+        0 0 0 4px rgba(33, 150, 243, 0.25),
+        0 1px 3px rgba(0, 0, 0, 0.2) inset;
+    filter: brightness(1.1);
+}
+
+.btn-voice-mic .voice-btn-icon {
+    /* Stop the emoji being draggable / selectable on its own. */
+    pointer-events: none;
+    line-height: 1;
+}

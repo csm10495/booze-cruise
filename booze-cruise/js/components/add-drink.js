@@ -235,11 +235,10 @@ class AddDrinkComponent {
         this._voiceCtx = { people, drinks };
         return `
             <div class="voice-bar">
-                <button type="button" class="btn btn-voice" id="voice-input-btn" aria-label="Hold to talk">
+                <button type="button" class="btn-voice-mic" id="voice-input-btn" aria-label="Hold to talk">
                     <span class="voice-btn-icon" aria-hidden="true">🎤</span>
-                    <span class="voice-btn-label">Hold to Talk</span>
                 </button>
-                <span class="voice-bar-hint">Hold the button, say "Coke for Matt and Gina", release</span>
+                <span class="voice-bar-hint">Hold &amp; say "Coke for Matt and Gina", then release</span>
             </div>
         `;
     }
@@ -558,14 +557,22 @@ class AddDrinkComponent {
         }
 
         // Voice input button — push-to-talk: press starts listening,
-        // release submits the heard transcript. Pointer capture keeps the
-        // release event on the button even if the user's finger slides off.
+        // release submits. Pointer capture keeps the release event on the
+        // button even if the user's finger slides off. We also bind a
+        // touchstart handler with preventDefault because iOS Safari
+        // ignores `touch-action: none` for long-press text selection /
+        // callout preview unless the touch event itself is prevented.
         const voiceBtn = document.getElementById('voice-input-btn');
         if (voiceBtn) {
+            // Belt-and-suspenders: kill the iOS long-press selection /
+            // callout that was making the overlay disappear when the user
+            // held the button. preventDefault on touchstart is the only
+            // reliable way to suppress this on iOS Safari.
+            voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); }, { passive: false });
+            voiceBtn.addEventListener('contextmenu', (e) => { e.preventDefault(); });
+
             voiceBtn.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
-                // Capture so subsequent pointer events fire on this element
-                // regardless of finger/cursor position.
                 try { voiceBtn.setPointerCapture(e.pointerId); } catch (_) {}
                 voiceBtn.classList.add('pressed');
                 this._startVoicePress();
@@ -578,8 +585,6 @@ class AddDrinkComponent {
             };
             voiceBtn.addEventListener('pointerup', release);
             voiceBtn.addEventListener('pointercancel', release);
-            // Keyboard accessibility: holding Space/Enter while focused
-            // works as press-and-hold.
             voiceBtn.addEventListener('keydown', (e) => {
                 if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
                     e.preventDefault();
@@ -596,8 +601,6 @@ class AddDrinkComponent {
                     }
                 }
             });
-            // If focus leaves while pressed, treat as release so we don't
-            // strand an open mic.
             voiceBtn.addEventListener('blur', () => {
                 if (voiceBtn.classList.contains('pressed')) {
                     voiceBtn.classList.remove('pressed');
