@@ -253,7 +253,7 @@ class AddDrinkComponent {
         if (!this._voiceOverlay) this._voiceOverlay = new window.VoiceOverlay(this._voiceManager);
 
         this._voiceOverlay.show({
-            onResult: (transcript) => this._applyVoiceTranscript(transcript),
+            onResult: (transcript, alternatives) => this._applyVoiceTranscript(transcript, alternatives),
             onError: (err) => {
                 window.showToast(err.message || 'Voice input failed.', 'error', 4000);
             },
@@ -261,7 +261,7 @@ class AddDrinkComponent {
         });
     }
 
-    async _applyVoiceTranscript(transcript) {
+    async _applyVoiceTranscript(transcript, alternatives) {
         try {
             const ctx = this._voiceCtx || {};
             // Refresh from storage in case people/drinks were added after the
@@ -270,9 +270,27 @@ class AddDrinkComponent {
             const people = cruise ? await this.storage.getPeopleForCruise(cruise.id) : (ctx.people || []);
             const drinks = cruise ? await this.storage.getDrinksForCruise(cruise.id) : (ctx.drinks || []);
 
-            const result = window.VoiceParser.parseVoiceCommand(transcript, { people, drinks });
-            if (!result.ok) {
-                window.showToast(result.error || "Couldn't parse that.", 'error', 5000);
+            // Try every alternative the engine returned (ordered most-likely
+            // first) and use the first one that parses cleanly. This
+            // dramatically improves the apparent recognition quality when
+            // the engine's top guess mishears a drink/person name but a
+            // lower-ranked alternative gets it right.
+            const candidates = (alternatives && alternatives.length)
+                ? alternatives
+                : [transcript];
+
+            let result = null;
+            let firstFailure = null;
+            for (const cand of candidates) {
+                const r = window.VoiceParser.parseVoiceCommand(cand, { people, drinks });
+                if (r.ok) { result = r; break; }
+                if (!firstFailure) firstFailure = { transcript: cand, result: r };
+            }
+
+            if (!result) {
+                const heard = (firstFailure && firstFailure.transcript) || transcript;
+                const reason = (firstFailure && firstFailure.result && firstFailure.result.error) || "Couldn't parse that.";
+                window.showToast(`Heard "${heard}" — ${reason}`, 'error', 6000);
                 return;
             }
 

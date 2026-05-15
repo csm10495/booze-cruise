@@ -83,12 +83,12 @@
             engine.onPartialResult((text) => {
                 transcriptEl.textContent = text;
             });
-            engine.onFinalResult((text) => {
+            engine.onFinalResult((text, alternatives) => {
                 transcriptEl.textContent = text;
                 this._finalReceived = true;
                 statusEl.textContent = 'Got it';
                 this._hide();
-                this._callbacks.onResult && this._callbacks.onResult(text);
+                this._callbacks.onResult && this._callbacks.onResult(text, alternatives || [text]);
             });
             engine.onError((err) => {
                 this._hide();

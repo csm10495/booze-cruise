@@ -73,21 +73,37 @@
             }
 
             const recog = new this._ctor();
-            recog.lang = (navigator.language || 'en-US');
+            // Force English explicitly. navigator.language can be variants
+            // like 'en-AU' or even non-English locales when the user's OS
+            // language doesn't match their drink/people names, which tanks
+            // accuracy. The drinks and people in this app are entered in
+            // English so we recognize in English regardless of the user's
+            // browser locale.
+            recog.lang = 'en-US';
             recog.interimResults = true;
-            recog.maxAlternatives = 1;
+            // Ask for several alternatives so the parser can try them all
+            // when the top-1 misheard the drink or person names.
+            recog.maxAlternatives = 5;
             recog.continuous = false;
 
             recog.onresult = (event) => {
                 let interim = '';
                 let final = '';
+                let alternatives = [];
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const r = event.results[i];
-                    if (r.isFinal) final += r[0].transcript;
-                    else interim += r[0].transcript;
+                    if (r.isFinal) {
+                        final += r[0].transcript;
+                        // Collect all alternatives for the final result.
+                        for (let j = 0; j < r.length; j++) {
+                            alternatives.push(r[j].transcript);
+                        }
+                    } else {
+                        interim += r[0].transcript;
+                    }
                 }
                 if (interim && this._partialCb) this._partialCb(interim);
-                if (final && this._finalCb) this._finalCb(final);
+                if (final && this._finalCb) this._finalCb(final, alternatives);
             };
 
             recog.onerror = (event) => {
@@ -237,22 +253,31 @@
                     this._model = await Vosk.createModel(modelUrl);
                 }
 
-                this._recognizer = new this._model.KaldiRecognizer(16000);
+                this._mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1, sampleRate: 16000 },
+                    video: false
+                });
+
+                // Build the AudioContext FIRST so we know its actual sample
+                // rate, then construct the recognizer at the matching rate.
+                // getUserMedia's sampleRate constraint is just a hint —
+                // browsers commonly run AudioContext at 44.1 kHz or 48 kHz.
+                // Initializing the recognizer at the wrong rate produces
+                // garbled / unintelligible recognition, which was the
+                // primary reason offline recognition was "terrible".
+                this._audioContext = new (global.AudioContext || global.webkitAudioContext)();
+                const actualSampleRate = this._audioContext.sampleRate;
+
+                this._recognizer = new this._model.KaldiRecognizer(actualSampleRate);
                 this._recognizer.on('result', (message) => {
                     const text = (message && message.result && message.result.text) || '';
-                    if (text && this._finalCb) this._finalCb(text);
+                    if (text && this._finalCb) this._finalCb(text, [text]);
                 });
                 this._recognizer.on('partialresult', (message) => {
                     const partial = (message && message.result && message.result.partial) || '';
                     if (partial && this._partialCb) this._partialCb(partial);
                 });
 
-                this._mediaStream = await navigator.mediaDevices.getUserMedia({
-                    audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1, sampleRate: 16000 },
-                    video: false
-                });
-
-                this._audioContext = new (global.AudioContext || global.webkitAudioContext)();
                 this._processorNode = this._audioContext.createScriptProcessor(4096, 1, 1);
                 this._processorNode.onaudioprocess = (event) => {
                     try { this._recognizer.acceptWaveform(event.inputBuffer); }

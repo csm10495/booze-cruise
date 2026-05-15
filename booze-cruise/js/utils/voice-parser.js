@@ -235,6 +235,7 @@
     //         other person has "matt" as first token)
     //    60  unique substring match (token ⊂ name) where name has only one
     //         such hit across the people list
+    //    40  per-token substring match (e.g. token "matt" ⊂ "Matt-Hewson" name token)
     //    20  any substring match
     function scorePersonToken(token, people) {
         const nToken = normalize(token);
@@ -242,6 +243,7 @@
 
         const exact = [];
         const firstName = [];
+        const tokenLevel = [];
         const substring = [];
 
         for (const person of people) {
@@ -249,13 +251,31 @@
             if (!nName) continue;
             if (nName === nToken) {
                 exact.push(person);
-            } else {
-                const nameTokens = tokens(nName);
-                if (nameTokens[0] === nToken) {
-                    firstName.push(person);
-                } else if (nName.includes(nToken) || nToken.includes(nName)) {
-                    substring.push(person);
+                continue;
+            }
+            const nameTokens = tokens(nName);
+            if (nameTokens[0] === nToken) {
+                firstName.push(person);
+                continue;
+            }
+            // Check if any single name token matches the spoken token in
+            // either direction. Handles speech engines that smush parts of
+            // a name together or split them oddly (e.g. "matt" → "matt smith"
+            // by exact-first-token, but also "matter" recognized for "matt"
+            // → "matter".includes("matt")).
+            let tokenLevelHit = false;
+            for (const nt of nameTokens) {
+                if (nt === nToken || nt.includes(nToken) || nToken.includes(nt)) {
+                    tokenLevelHit = true;
+                    break;
                 }
+            }
+            if (tokenLevelHit) {
+                tokenLevel.push(person);
+                continue;
+            }
+            if (nName.includes(nToken) || nToken.includes(nName)) {
+                substring.push(person);
             }
         }
 
@@ -268,6 +288,10 @@
                 // Ambiguous first-name match — surface all of them so the caller
                 // can report which ones.
                 for (const p of firstName) results.push({ person: p, score: 80 });
+            } else if (tokenLevel.length === 1) {
+                results.push({ person: tokenLevel[0], score: 40 });
+            } else if (tokenLevel.length > 1) {
+                for (const p of tokenLevel) results.push({ person: p, score: 40 });
             } else if (substring.length === 1) {
                 results.push({ person: substring[0], score: 60 });
             } else if (substring.length > 1) {
