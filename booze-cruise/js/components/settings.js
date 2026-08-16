@@ -1424,6 +1424,8 @@ class SettingsComponent {
                 // break its offline support. The voice cache is kept so the
                 // ~40 MB Vosk model isn't re-downloaded.
                 if ('caches' in window) {
+                    // Mirrors CACHE_PREFIX / LEGACY_CACHE_PREFIX in sw.js —
+                    // keep the two in sync if the naming scheme changes.
                     const scopeKey = new URL('./', document.baseURI).pathname
                         .replace(/^\/+|\/+$/g, '').replace(/\//g, '-') || 'root';
                     const ownPrefixes = [`${scopeKey}-app-`, 'cruise-drink-tracker-'];
