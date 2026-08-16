@@ -42,6 +42,16 @@ app updates.
 - Local storage + IndexedDB for offline data persistence
 - Service worker with cache-first strategy and a separate cache for the
   optional voice model (so app-cache version bumps don't blow away the 40 MB)
+- Scoped to its own subpath: the manifest (`id`, `start_url`, `scope`) and the
+  service worker registration are limited to the directory the app is served
+  from, and the caches it creates are namespaced with that subpath. The worker
+  only ever reads and deletes caches it owns, so installing this app can't
+  capture navigations for — or wipe the offline caches of — other PWAs hosted
+  on the same origin (e.g. other apps on `csm10495.github.io`)
+- `localStorage` is origin-wide too, so every key is namespaced with the same
+  subpath (`booze-cruise:activeTab`, …) via `js/utils/app-storage.js`. Keys
+  written before the namespace existed are moved across once on first load, so
+  updating doesn't lose settings or data
 - Modern responsive design with CSS Grid and Flexbox
 
 ## Development
@@ -67,7 +77,7 @@ Then visit `http://localhost:8000/booze-cruise/` in your browser.
 │   │   ├── app.js               # Main application controller
 │   │   ├── storage.js           # Data persistence
 │   │   ├── components/          # UI components (add-drink, analytics, settings, navigation)
-│   │   └── utils/               # Themes, photos, exporter, voice (parser/engine/UI)
+│   │   └── utils/               # App storage namespace, themes, photos, exporter, voice (parser/engine/UI)
 │   ├── lib/
 │   │   └── chart.min.js         # Chart.js (bundled)
 │   ├── sw.js                    # Service worker

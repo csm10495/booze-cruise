@@ -233,7 +233,8 @@
     const VOSK_LIB_URL = 'https://cdn.jsdelivr.net/npm/vosk-browser@0.0.5/dist/vosk.js';
     const VOSK_MODEL_URL = 'https://ccoreilly.github.io/vosk-browser/models/vosk-model-small-en-us-0.15.tar.gz';
     const VOSK_CACHE = 'cruise-voice-v1';
-    const VOSK_LOCALSTORAGE_KEY = 'voice-offline-enabled';
+    // Logical name; AppStorage namespaces it to this app's subpath.
+    const VOSK_STORAGE_KEY = 'voice-offline-enabled';
     // How long of silence before auto-finalize for Vosk. Vosk emits
     // 'result' events on internal silence detection, which can trigger
     // even on short mid-phrase pauses; we use our own longer timer
@@ -317,7 +318,7 @@
         // Called once at startup; updates _available based on opt-in flag
         // and cache contents.
         async init() {
-            const optIn = localStorage.getItem(VOSK_LOCALSTORAGE_KEY) === 'true';
+            const optIn = AppStorage.getItem(VOSK_STORAGE_KEY) === 'true';
             if (!optIn) { this._available = false; return; }
             this._available = await voskAssetsCached();
             // If offline is enabled, prewarm the model in the background so
@@ -491,14 +492,14 @@
         await downloadWithProgress(VOSK_LIB_URL, 0.05, 0);
         await downloadWithProgress(VOSK_MODEL_URL, 0.95, 0.05);
         onProgress && onProgress(1);
-        localStorage.setItem(VOSK_LOCALSTORAGE_KEY, 'true');
+        AppStorage.setItem(VOSK_STORAGE_KEY, 'true');
     }
 
     async function uninstallVoskAssets() {
         if ('caches' in global) {
             try { await caches.delete(VOSK_CACHE); } catch (e) {}
         }
-        localStorage.removeItem(VOSK_LOCALSTORAGE_KEY);
+        AppStorage.removeItem(VOSK_STORAGE_KEY);
     }
 
     // --- Manager ---------------------------------------------------------
@@ -549,6 +550,6 @@
         isInstalled: voskAssetsCached,
         urls: { lib: VOSK_LIB_URL, model: VOSK_MODEL_URL },
         cacheName: VOSK_CACHE,
-        localStorageKey: VOSK_LOCALSTORAGE_KEY
+        storageKey: VOSK_STORAGE_KEY
     };
 })(typeof window !== 'undefined' ? window : globalThis);

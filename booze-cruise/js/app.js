@@ -28,8 +28,8 @@ class DrinkTrackerApp {
             window.settingsComponent = new SettingsComponent(this.storage, this.themeManager);
 
             // Load initial page content
-            const rememberPage = localStorage.getItem('rememberPageOnRefresh') !== 'false';
-            const savedTab = rememberPage ? localStorage.getItem('activeTab') : null;
+            const rememberPage = AppStorage.getItem('rememberPageOnRefresh') !== 'false';
+            const savedTab = rememberPage ? AppStorage.getItem('activeTab') : null;
             const tabToLoad = savedTab || 'add-drink-page';
             await this.navigation.navigateToPage(tabToLoad);
 
@@ -52,13 +52,13 @@ class DrinkTrackerApp {
             const cruises = await this.storage.getAllCruises();
             if (cruises.length > 0) {
                 // Check for pending cruise from import first
-                const pendingCruiseId = localStorage.getItem('cruise-drink-tracker-pending-cruise');
+                const pendingCruiseId = AppStorage.getItem('pending-cruise');
                 let selectedCruise = null;
 
                 if (pendingCruiseId) {
                     selectedCruise = cruises.find(c => c.id === pendingCruiseId);
                     // Clear the pending cruise setting
-                    localStorage.removeItem('cruise-drink-tracker-pending-cruise');
+                    AppStorage.removeItem('pending-cruise');
                 }
 
                 // If no pending cruise, always start with the default cruise
@@ -148,7 +148,13 @@ class DrinkTrackerApp {
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
-                const registration = await navigator.serviceWorker.register('sw.js');
+                // Register with an explicit scope tied to this app's subpath so
+                // the worker never controls other apps hosted on the same
+                // origin (e.g. other PWAs on csm10495.github.io).
+                const swUrl = new URL('sw.js', document.baseURI);
+                const registration = await navigator.serviceWorker.register(swUrl, {
+                    scope: new URL('./', document.baseURI).pathname
+                });
                 console.log('Service Worker registered successfully:', registration);
 
                 // Log which SW version is actually controlling this page so
@@ -231,7 +237,7 @@ class DrinkTrackerApp {
                 this.currentCruise = cruise;
 
                 // Save the selected cruise for persistence
-                localStorage.setItem('selectedCruiseId', cruise.id);
+                AppStorage.setItem('selectedCruiseId', cruise.id);
 
                 this.updateCruiseDisplay();
 

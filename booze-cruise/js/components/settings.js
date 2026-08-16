@@ -141,7 +141,7 @@ class SettingsComponent {
                                 <p>When enabled, the app will remember the last page you were on after reload.</p>
                             </div>
                             <label class="toggle-switch">
-                                <input type="checkbox" id="remember-page-refresh" ${localStorage.getItem('rememberPageOnRefresh') !== 'false' ? 'checked' : ''}>
+                                <input type="checkbox" id="remember-page-refresh" ${AppStorage.getItem('rememberPageOnRefresh') !== 'false' ? 'checked' : ''}>
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
@@ -282,7 +282,7 @@ class SettingsComponent {
         const rememberPageCheckbox = document.getElementById('remember-page-refresh');
         if (rememberPageCheckbox) {
             rememberPageCheckbox.addEventListener('change', (e) => {
-                localStorage.setItem('rememberPageOnRefresh', e.target.checked ? 'true' : 'false');
+                AppStorage.setItem('rememberPageOnRefresh', e.target.checked ? 'true' : 'false');
             });
         }
         // Cruise management
@@ -694,7 +694,7 @@ class SettingsComponent {
                     // Restore current cruise selection
                     if (data.appSettings.currentCruise) {
                         // Set the current cruise after app reload
-                        localStorage.setItem('cruise-drink-tracker-pending-cruise', data.appSettings.currentCruise);
+                        AppStorage.setItem('pending-cruise', data.appSettings.currentCruise);
                     }
                 }
 
@@ -1417,11 +1417,20 @@ class SettingsComponent {
         return new Promise((resolve) => {
             if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
                 // No SW controlling the page — nothing to clear via message.
-                // Fall back to clearing caches directly from the page.
+                // Fall back to clearing caches directly from the page. Only
+                // this app's caches (namespaced by its subpath, plus the
+                // pre-namespacing ones) are touched: CacheStorage is shared by
+                // every app on the origin and wiping another app's cache would
+                // break its offline support. The voice cache is kept so the
+                // ~40 MB Vosk model isn't re-downloaded.
                 if ('caches' in window) {
+                    // Mirrors CACHE_PREFIX / LEGACY_CACHE_PREFIX in sw.js —
+                    // keep the two in sync if the naming scheme changes.
+                    const ownPrefixes = [`${AppStorage.scopeKey}-app-`, 'cruise-drink-tracker-'];
                     caches.keys().then((names) => Promise.all(
                         names
-                            .filter((n) => n !== 'cruise-voice-v1')
+                            .filter((n) => n !== 'cruise-voice-v1' &&
+                                ownPrefixes.some((prefix) => n.startsWith(prefix)))
                             .map((n) => caches.delete(n))
                     )).then(() => resolve()).catch(() => resolve());
                 } else {
@@ -1459,7 +1468,7 @@ class SettingsComponent {
 
         // Reflect persisted state on the toggle.
         const enabledFlag = window.VoskInstaller
-            ? localStorage.getItem(window.VoskInstaller.localStorageKey) === 'true'
+            ? AppStorage.getItem(window.VoskInstaller.storageKey) === 'true'
             : false;
         toggle.checked = enabledFlag;
 
