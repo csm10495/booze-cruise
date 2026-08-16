@@ -63,6 +63,10 @@
     }
 
     const AppStorage = {
+        // The app's subpath, e.g. "booze-cruise". Exposed so other scoping
+        // schemes on the page (the cache names in settings.js) derive the key
+        // in exactly one place.
+        scopeKey: APP_SCOPE_KEY,
         // Exposed for tests/debugging and so callers can build a key without
         // hardcoding the separator.
         prefix: KEY_PREFIX,
