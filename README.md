@@ -42,6 +42,12 @@ app updates.
 - Local storage + IndexedDB for offline data persistence
 - Service worker with cache-first strategy and a separate cache for the
   optional voice model (so app-cache version bumps don't blow away the 40 MB)
+- Scoped to its own subpath: the manifest (`id`, `start_url`, `scope`) and the
+  service worker registration are limited to the directory the app is served
+  from, and the caches it creates are namespaced with that subpath. The worker
+  only ever reads and deletes caches it owns, so installing this app can't
+  capture navigations for — or wipe the offline caches of — other PWAs hosted
+  on the same origin (e.g. other apps on `csm10495.github.io`)
 - Modern responsive design with CSS Grid and Flexbox
 
 ## Development

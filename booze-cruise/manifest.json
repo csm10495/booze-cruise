@@ -2,12 +2,13 @@
   "name": "Booze Cruise",
   "short_name": "BoozeCruise",
   "description": "Track drinks during your booze cruise with full offline functionality",
-  "start_url": "/booze-cruise/",
+  "id": "/booze-cruise/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2196F3",
   "orientation": "portrait-primary",
-  "scope": "/",
+  "scope": "./",
   "lang": "en",
   "categories": ["productivity", "lifestyle"],
   "icons": [
@@ -29,7 +30,7 @@
       "name": "Add Drink",
       "short_name": "Add Drink",
       "description": "Quickly add a new drink",
-      "url": "/?action=add-drink",
+      "url": "./?action=add-drink",
       "icons": [
         {
           "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><text y='0.9em' font-size='80'>🍹</text></svg>",
@@ -41,7 +42,7 @@
       "name": "Analytics",
       "short_name": "Analytics",
       "description": "View drink analytics and charts",
-      "url": "/?action=analytics",
+      "url": "./?action=analytics",
       "icons": [
         {
           "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><text y='0.9em' font-size='80'>📊</text></svg>",

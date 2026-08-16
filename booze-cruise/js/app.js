@@ -148,7 +148,13 @@ class DrinkTrackerApp {
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
-                const registration = await navigator.serviceWorker.register('sw.js');
+                // Register with an explicit scope tied to this app's subpath so
+                // the worker never controls other apps hosted on the same
+                // origin (e.g. other PWAs on csm10495.github.io).
+                const swUrl = new URL('sw.js', document.baseURI);
+                const registration = await navigator.serviceWorker.register(swUrl, {
+                    scope: new URL('./', document.baseURI).pathname
+                });
                 console.log('Service Worker registered successfully:', registration);
 
                 // Log which SW version is actually controlling this page so

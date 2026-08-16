@@ -1,4 +1,17 @@
-const CACHE_NAME = 'cruise-drink-tracker-v18';
+// This app is served from a subpath of an origin that hosts several other
+// PWAs (e.g. https://csm10495.github.io/<app>/). CacheStorage is shared by the
+// whole origin, so every cache this worker owns is namespaced by the subpath
+// it is served from, and the worker only ever reads or deletes caches it owns.
+// Touching another app's cache would silently break that app's offline mode.
+const APP_SCOPE_URL = new URL('./', self.location);
+const APP_SCOPE_KEY = APP_SCOPE_URL.pathname.replace(/^\/+|\/+$/g, '').replace(/\//g, '-') || 'root';
+const CACHE_PREFIX = `${APP_SCOPE_KEY}-app-`;
+const CACHE_NAME = `${CACHE_PREFIX}v19`;
+// Caches created before app caches were namespaced by subpath. They belong to
+// this app, so they're still reused on install and cleaned up on activate.
+const LEGACY_CACHE_PREFIX = 'cruise-drink-tracker-';
+// Deliberately not renamed/versioned: this holds the user's ~40 MB Vosk
+// download and the name is shared with js/utils/voice-engine.js.
 const VOICE_CACHE_NAME = 'cruise-voice-v1';
 const SW_VERSION = CACHE_NAME;
 console.log(`[ServiceWorker] script loaded: ${SW_VERSION}`);
@@ -6,30 +19,49 @@ console.log(`[ServiceWorker] script loaded: ${SW_VERSION}`);
 // served immediately (stale-while-revalidate) so the network is never on
 // the critical path for known files.
 const NETWORK_TIMEOUT_MS = 2500;
+// Resolved against the app's own subpath so the worker keeps working if the
+// app is ever hosted under a different path.
+const scopedUrl = (path) => new URL(path, APP_SCOPE_URL).toString();
 const urlsToCache = [
-  '/booze-cruise/',
-  '/booze-cruise/index.html',
-  '/booze-cruise/manifest.json',
-  '/booze-cruise/css/main.css',
-  '/booze-cruise/css/themes.css',
-  '/booze-cruise/css/components.css',
-  '/booze-cruise/js/app.js',
-  '/booze-cruise/js/storage.js',
-  '/booze-cruise/js/components/navigation.js',
-  '/booze-cruise/js/components/add-drink.js',
-  '/booze-cruise/js/components/analytics.js',
-  '/booze-cruise/js/components/settings.js',
-  '/booze-cruise/js/utils/photo.js',
-  '/booze-cruise/js/utils/themes.js',
-  '/booze-cruise/js/utils/cruise-highlights-exporter.js',
-  '/booze-cruise/js/utils/voice-parser.js',
-  '/booze-cruise/js/utils/voice-engine.js',
-  '/booze-cruise/js/utils/voice-ui.js',
-  '/booze-cruise/lib/chart.min.js',
-  '/booze-cruise/favicon.ico',
-  '/booze-cruise/icon.png',
-  '/booze-cruise/gravatar.png'
-];
+  '',
+  'index.html',
+  'manifest.json',
+  'css/main.css',
+  'css/themes.css',
+  'css/components.css',
+  'js/app.js',
+  'js/storage.js',
+  'js/components/navigation.js',
+  'js/components/add-drink.js',
+  'js/components/analytics.js',
+  'js/components/settings.js',
+  'js/utils/photo.js',
+  'js/utils/themes.js',
+  'js/utils/cruise-highlights-exporter.js',
+  'js/utils/voice-parser.js',
+  'js/utils/voice-engine.js',
+  'js/utils/voice-ui.js',
+  'lib/chart.min.js',
+  'favicon.ico',
+  'icon.png',
+  'gravatar.png'
+].map(scopedUrl);
+
+// A cache belongs to this app only if it is namespaced with this app's
+// subpath (or is one of the app's pre-namespacing caches).
+function isOwnCache(cacheName) {
+  return cacheName === VOICE_CACHE_NAME ||
+    cacheName.startsWith(CACHE_PREFIX) ||
+    cacheName.startsWith(LEGACY_CACHE_PREFIX);
+}
+
+// Caches owned by this app that aren't the current app cache or the voice
+// cache — i.e. leftovers from an older version of this app.
+async function getStaleOwnCacheNames() {
+  const cacheNames = await caches.keys();
+  return cacheNames.filter((name) =>
+    isOwnCache(name) && name !== CACHE_NAME && name !== VOICE_CACHE_NAME);
+}
 
 self.addEventListener('install', (event) => {
   console.log(`[ServiceWorker] installing: ${SW_VERSION}`);
@@ -44,29 +76,31 @@ self.addEventListener('install', (event) => {
 async function populateCache() {
   const cache = await caches.open(CACHE_NAME);
 
-  // Reuse responses from any previous service worker cache so updates
-  // don't force a re-download of every asset over a slow network. This
-  // makes SW updates near-instant for returning users.
-  const existingCacheNames = await caches.keys();
+  // Reuse responses from this app's previous caches so updates don't force a
+  // re-download of every asset over a slow network, and so a cache rename
+  // (e.g. when the subpath namespace was introduced) is lossless. Only this
+  // app's caches are consulted — another app's cached copy of a same-named
+  // path must never be served here.
   const oldCaches = await Promise.all(
-    existingCacheNames
-      .filter((name) => name !== CACHE_NAME)
-      .map((name) => caches.open(name))
+    (await getStaleOwnCacheNames()).map((name) => caches.open(name))
   );
+
+  for (const oldCache of oldCaches) {
+    const requests = await oldCache.keys();
+    await Promise.allSettled(requests.map(async (request) => {
+      if (await cache.match(request)) return;
+      const response = await oldCache.match(request);
+      if (response) {
+        await cache.put(request, response);
+      }
+    }));
+  }
 
   // Use allSettled so a single slow/failed asset doesn't abort the whole
   // install. Anything that fails here will be populated lazily by the
   // fetch handler on first successful access.
   await Promise.allSettled(urlsToCache.map(async (url) => {
     if (await cache.match(url)) return;
-
-    for (const oldCache of oldCaches) {
-      const reused = await oldCache.match(url);
-      if (reused) {
-        await cache.put(url, reused.clone());
-        return;
-      }
-    }
 
     try {
       const response = await fetch(url);
@@ -83,14 +117,37 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(handleFetch(event.request));
 });
 
+// Look a request up in this app's caches only. `caches.match()` would search
+// *every* cache on the origin, which means another app's cached copy of a
+// same-path URL could be served here (and vice versa).
+async function matchOwnCaches(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  // The voice cache is filled by the page (js/utils/voice-engine.js); check it
+  // without creating it so offline voice assets still resolve here.
+  if (await caches.has(VOICE_CACHE_NAME)) {
+    const voiceCache = await caches.open(VOICE_CACHE_NAME);
+    return voiceCache.match(request);
+  }
+  return undefined;
+}
+
+// Only responses for this app's own subpath belong in this app's cache.
+function isOwnAsset(url) {
+  return url.startsWith(APP_SCOPE_URL.toString());
+}
+
 function handleFetch(request) {
-  return caches.match(request).then((cachedResponse) => {
+  return matchOwnCaches(request).then((cachedResponse) => {
     // Always kick off a network request in the background. If it succeeds
     // we refresh the cache for next time; we never block on it when we
     // already have a cached copy.
     const networkUpdate = fetch(request)
       .then((response) => {
-        if (response && response.status === 200 && response.type === 'basic') {
+        if (response && response.status === 200 && response.type === 'basic' &&
+            isOwnAsset(request.url)) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseToCache);
@@ -125,7 +182,7 @@ function handleFetch(request) {
 
       const fallback = () => {
         if (isNavigation) {
-          caches.match('/booze-cruise/index.html').then((shell) => {
+          matchOwnCaches(scopedUrl('index.html')).then((shell) => {
             done(shell || new Response('', { status: 504, statusText: 'Gateway Timeout' }));
           });
         } else {
@@ -149,10 +206,6 @@ function handleFetch(request) {
 
 self.addEventListener('activate', (event) => {
   console.log(`[ServiceWorker] activating: ${SW_VERSION}`);
-  // Whitelist the dedicated voice cache so it survives main-cache version
-  // bumps — the user's ~40 MB downloaded model must not be deleted by a
-  // routine app update.
-  const cacheWhitelist = [CACHE_NAME, VOICE_CACHE_NAME];
   event.waitUntil(
     Promise.all([
       // Take control of any already-open pages immediately so they use the
@@ -164,15 +217,13 @@ self.addEventListener('activate', (event) => {
           client.postMessage({ type: 'SW_VERSION', version: SW_VERSION });
         }
       }),
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheWhitelist.indexOf(cacheName) === -1) {
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
+      // Only this app's own stale caches are dropped. Caches belonging to
+      // other apps on this origin are left alone, and the dedicated voice
+      // cache survives main-cache version bumps — the user's ~40 MB
+      // downloaded model must not be deleted by a routine app update.
+      getStaleOwnCacheNames().then((staleNames) =>
+        Promise.all(staleNames.map((cacheName) => caches.delete(cacheName)))
+      )
     ])
   );
 });
@@ -194,15 +245,15 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'GET_SW_VERSION') {
     reply({ type: 'SW_VERSION', version: SW_VERSION });
   } else if (event.data && event.data.type === 'CLEAR_APP_CACHE') {
-    // Triggered by Settings → Update Now. Deletes ALL caches except the
-    // dedicated voice cache so the user's ~40 MB Vosk download isn't
-    // discarded. Replies when done so the page can safely reload.
+    // Triggered by Settings → Update Now. Deletes this app's caches only —
+    // never another app's on the same origin — and keeps the dedicated voice
+    // cache so the user's ~40 MB Vosk download isn't discarded.
     event.waitUntil((async () => {
       try {
         const names = await caches.keys();
         await Promise.all(
           names
-            .filter((n) => n !== VOICE_CACHE_NAME)
+            .filter((n) => isOwnCache(n) && n !== VOICE_CACHE_NAME)
             .map((n) => caches.delete(n))
         );
         reply({ type: 'APP_CACHE_CLEARED' });

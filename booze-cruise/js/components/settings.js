@@ -1417,11 +1417,20 @@ class SettingsComponent {
         return new Promise((resolve) => {
             if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
                 // No SW controlling the page — nothing to clear via message.
-                // Fall back to clearing caches directly from the page.
+                // Fall back to clearing caches directly from the page. Only
+                // this app's caches (namespaced by its subpath, plus the
+                // pre-namespacing ones) are touched: CacheStorage is shared by
+                // every app on the origin and wiping another app's cache would
+                // break its offline support. The voice cache is kept so the
+                // ~40 MB Vosk model isn't re-downloaded.
                 if ('caches' in window) {
+                    const scopeKey = new URL('./', document.baseURI).pathname
+                        .replace(/^\/+|\/+$/g, '').replace(/\//g, '-') || 'root';
+                    const ownPrefixes = [`${scopeKey}-app-`, 'cruise-drink-tracker-'];
                     caches.keys().then((names) => Promise.all(
                         names
-                            .filter((n) => n !== 'cruise-voice-v1')
+                            .filter((n) => n !== 'cruise-voice-v1' &&
+                                ownPrefixes.some((prefix) => n.startsWith(prefix)))
                             .map((n) => caches.delete(n))
                     )).then(() => resolve()).catch(() => resolve());
                 } else {
