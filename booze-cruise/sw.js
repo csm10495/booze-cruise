@@ -6,7 +6,7 @@
 const APP_SCOPE_URL = new URL('./', self.location);
 const APP_SCOPE_KEY = APP_SCOPE_URL.pathname.replace(/^\/+|\/+$/g, '').replace(/\//g, '-') || 'root';
 const CACHE_PREFIX = `${APP_SCOPE_KEY}-app-`;
-const CACHE_NAME = `${CACHE_PREFIX}v19`;
+const CACHE_NAME = `${CACHE_PREFIX}v20`;
 // Caches created before app caches were namespaced by subpath. They belong to
 // this app, so they're still reused on install and cleaned up on activate.
 const LEGACY_CACHE_PREFIX = 'cruise-drink-tracker-';
@@ -31,6 +31,7 @@ const urlsToCache = [
   'css/components.css',
   'js/app.js',
   'js/storage.js',
+  'js/utils/app-storage.js',
   'js/components/navigation.js',
   'js/components/add-drink.js',
   'js/components/analytics.js',

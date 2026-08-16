@@ -32,8 +32,8 @@ class NavigationManager {
             });
 
             // Persist active tab only if setting is enabled
-            if (localStorage.getItem('rememberPageOnRefresh') !== 'false') {
-                localStorage.setItem('activeTab', pageId);
+            if (AppStorage.getItem('rememberPageOnRefresh') !== 'false') {
+                AppStorage.setItem('activeTab', pageId);
             }
 
             // Load the page content

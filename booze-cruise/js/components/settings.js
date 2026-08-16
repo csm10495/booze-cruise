@@ -141,7 +141,7 @@ class SettingsComponent {
                                 <p>When enabled, the app will remember the last page you were on after reload.</p>
                             </div>
                             <label class="toggle-switch">
-                                <input type="checkbox" id="remember-page-refresh" ${localStorage.getItem('rememberPageOnRefresh') !== 'false' ? 'checked' : ''}>
+                                <input type="checkbox" id="remember-page-refresh" ${AppStorage.getItem('rememberPageOnRefresh') !== 'false' ? 'checked' : ''}>
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
@@ -282,7 +282,7 @@ class SettingsComponent {
         const rememberPageCheckbox = document.getElementById('remember-page-refresh');
         if (rememberPageCheckbox) {
             rememberPageCheckbox.addEventListener('change', (e) => {
-                localStorage.setItem('rememberPageOnRefresh', e.target.checked ? 'true' : 'false');
+                AppStorage.setItem('rememberPageOnRefresh', e.target.checked ? 'true' : 'false');
             });
         }
         // Cruise management
@@ -694,7 +694,7 @@ class SettingsComponent {
                     // Restore current cruise selection
                     if (data.appSettings.currentCruise) {
                         // Set the current cruise after app reload
-                        localStorage.setItem('cruise-drink-tracker-pending-cruise', data.appSettings.currentCruise);
+                        AppStorage.setItem('pending-cruise', data.appSettings.currentCruise);
                     }
                 }
 
@@ -1470,7 +1470,7 @@ class SettingsComponent {
 
         // Reflect persisted state on the toggle.
         const enabledFlag = window.VoskInstaller
-            ? localStorage.getItem(window.VoskInstaller.localStorageKey) === 'true'
+            ? AppStorage.getItem(window.VoskInstaller.storageKey) === 'true'
             : false;
         toggle.checked = enabledFlag;
 

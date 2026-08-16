@@ -53,7 +53,7 @@ class ThemeManager {
 
     init() {
         // Load saved theme
-        const savedTheme = localStorage.getItem('cruise-drink-tracker-theme');
+        const savedTheme = AppStorage.getItem('theme');
         if (savedTheme) {
             try {
                 const themeData = JSON.parse(savedTheme);
@@ -102,7 +102,7 @@ class ThemeManager {
         this.currentTheme = themeName;
 
         // Save theme preference
-        localStorage.setItem('cruise-drink-tracker-theme', JSON.stringify({
+        AppStorage.setItem('theme', JSON.stringify({
             type: 'preset',
             name: themeName
         }));
@@ -133,7 +133,7 @@ class ThemeManager {
         this.themes.custom.variables = { ...variables };
 
         // Save custom theme
-        localStorage.setItem('cruise-drink-tracker-theme', JSON.stringify({
+        AppStorage.setItem('theme', JSON.stringify({
             type: 'custom',
             variables: variables
         }));
@@ -285,7 +285,7 @@ class ThemeManager {
         this.applyDeviceTheme();
 
         // Save device theme preference
-        localStorage.setItem('cruise-drink-tracker-theme', JSON.stringify({
+        AppStorage.setItem('theme', JSON.stringify({
             type: 'device'
         }));
     }

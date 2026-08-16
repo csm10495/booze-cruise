@@ -71,8 +71,8 @@ class StorageManager {
     initLocalStorage() {
         // Initialize localStorage structure if not exists
         this.stores.forEach(store => {
-            if (!localStorage.getItem(store)) {
-                localStorage.setItem(store, JSON.stringify([]));
+            if (!AppStorage.getItem(store)) {
+                AppStorage.setItem(store, JSON.stringify([]));
             }
         });
     }
@@ -176,6 +176,10 @@ class StorageManager {
     }
 
     // localStorage operations
+    // Keys go through AppStorage, which namespaces them with this app's
+    // subpath: localStorage is shared by every app on the origin, so store
+    // names this generic ("drinks", "people", ...) would otherwise collide
+    // with a sibling PWA's data.
     saveToLocalStorage(storeName, data) {
         const items = this.getAllFromLocalStorage(storeName);
         const existingIndex = items.findIndex(item => item.id === data.id);
@@ -186,7 +190,7 @@ class StorageManager {
             items.push(data);
         }
 
-        localStorage.setItem(storeName, JSON.stringify(items));
+        AppStorage.setItem(storeName, JSON.stringify(items));
         return Promise.resolve(data);
     }
 
@@ -197,7 +201,7 @@ class StorageManager {
 
     getAllFromLocalStorage(storeName) {
         try {
-            return JSON.parse(localStorage.getItem(storeName) || '[]');
+            return JSON.parse(AppStorage.getItem(storeName) || '[]');
         } catch (error) {
             console.error('Error parsing localStorage data:', error);
             return [];
@@ -207,7 +211,7 @@ class StorageManager {
     deleteFromLocalStorage(storeName, id) {
         const items = this.getAllFromLocalStorage(storeName);
         const filteredItems = items.filter(item => item.id !== id);
-        localStorage.setItem(storeName, JSON.stringify(filteredItems));
+        AppStorage.setItem(storeName, JSON.stringify(filteredItems));
         return Promise.resolve();
     }
 
@@ -368,7 +372,7 @@ class StorageManager {
             }
         } else {
             this.stores.forEach(store => {
-                localStorage.setItem(store, JSON.stringify([]));
+                AppStorage.setItem(store, JSON.stringify([]));
             });
         }
     }
